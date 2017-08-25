@@ -162,24 +162,158 @@ MobSF/Akana/Whatever Security Analysis tool
 
 # Что общего?
 
-* Каждый слой знает только про один слой под ним
 
-* Пруфлинк:
-
-В строго поделенных на слои системах, слою позволено использовать только слой, расположенный непосредственно под ним [^3]
+> В строго поделенных на слои системах, слою позволено использовать только слой, расположенный непосредственно под ним [^3]
 
 
 [^3]: 
  	Software Architecture in Practice, 3rd Edition, Bass, Clements, Kazman, Addison-Wesley
 
+——
+
+# Пример с GreenDao
+
+0. 4 базы данных
+1. 30 таблиц
+2. 278 классов для доступа к данным
+3. 20,000 строк кода для доступа к данным
+4. 0% фактического покрытия
+
 ——-
+
+![fit](zerg.jpg)
+
+——
+
+# Пример из Entity
+
+```java
+
+public class Entity {
+
+	private String name;
+	private Long id;
+
+	…
+
+	public String getName();
+	…
+
+}
+
+```
+
+——
+
+# Типичный пример - запрос Entity
+
+```java
+	@AutoFactory
+	public class GetEntityRequest extends SqlRequest {
+
+		@Override
+		protected String[] getColumns() {
+			return new String[] {
+				F + “.” + ID_FIELD + “ AS “ + F_ID_FIELD,
+				F + “.” + NAME_FIELD + “ AS “ + F_NAME_FIELD,
+				…
+				STORAGE + “.” + ID_FIELD + “ AS “ + STORAGE_ID_FIELD,
+				…
+				SYNC + “.” + ID_FIELD + “ AS “ + SYNC_ID_FIELD,
+				…
+
+			}
+		}
+	}
+```
+
+
+——
+
+# Типичный пример - запрос Entity
+
+```java
+	@Override
+	public Entity createEntity() {
+		if (!cursor.moveToFirst()) {
+			return null;
+		}
+		
+		…
+		String name = cursor.getString(cursor.getColumnIndex(F_NAME_FIELD));
+		…
+		return new Entity(id, name, …); 
+	}
+```
+
+——-
+
+
+# Типичный пример - запрос Entity
+
+```java, [.highlight: 1,2]
+	@AutoFactory
+	public class GetEntityRequest extends SqlRequest {
+		…
+	}
+```
+
+——
+
+# Типичный пример - запрос Entity
+
+```java, [.highlight: 1, 2, 6-10]
+	@AutoFactory
+	public class GetEntityRequest extends SqlRequest {
+		…
+	}
+
+	@Generated
+	public class GetEntityRequestFactory {
+		public GetEntityRequest create() {
+			return new GetEntityRequest();
+		}
+	} 
+```
+
+——
+
+
+# Вызов запроса
+
+```java
+
+public class MyEntityActivity extends Activity { 
+
+	@Inject GetEntityRequestFactory requestFactory;
+
+	@Override
+	protected void onCreate(Bundle instance) {
+		super.onCreate(instance);
+		Entity entity = requestFactory.create().createEntity();
+		show(entity);
+	}
+}
+
+```
+
+
+——
+
+# В чем проблема?
+
+0. Disk access on UI thread 
+1. Boilerplate
+2. View layer accesses data layer hardening the unit tests
+3. You don’t give a damn about your data model
+
+
+——
+
+
+# План действий
 
 ![fit original](plan.jpg)
-
-——-
-
-Составляем план действий
-
 
 
 ——-
@@ -190,38 +324,351 @@ MobSF/Akana/Whatever Security Analysis tool
 2. Покрытый на 100% тестами
 3. Внедряемый в приложение
 
-——
-
-# Интеграция в приложение
-
-1. 1 юзкейс
-2. Unit-test на этот кейс используя старый код
-3. В этот тест добавлять новую имплементацию
-4. Задепрекейтить все использования
-5. Заменить все использования в следующем релизе
-
-
-——
-
-# Пример с GreenDao
-
-——
-
-# Что если коллеги/начальство не видит нужды?
-
-Добавить диаграмму замедления разработки фич от времени
 
 ——-
 
-# Пример с Retrofit
+# А зачем?
 
-1. json scheme
-2. Новую функциональность делали с ретрофитом в поках
+1. Вы поймете свою модель
+2. Обеспечите ее гарантирование функционирование
+3. Защитите от неверного использования
 
 ——-
 
-А можно ли вообще провести такой рефакторинг?
+# Как осознать модель данных
 
+1. Stetho [^4]
+2. Db files
+3. sqlbrite [^5]
+
+[^4]:  	http://facebook.github.io/stetho/
+
+[^5]:	https://github.com/square/sqlbrite
+
+——
+
+# Интеграция в приложение - CIDR!
+
+1. Create unit test
+2. Implement
+3. Deprecate
+3. Replace
+
+
+——-
+
+# Интеграция в приложение - CIDR!
+
+1. Create unit test
+
+——
+
+
+# Create unit test
+
+```java
+ 	@Override
+	protected void onCreate(Bundle instance) {
+		super.onCreate(instance);
+		Entity entity = requestFactory.create().createEntity();
+		show(entity);
+	}
+```
+
+——-
+
+
+# Create unit test
+
+```java, [.highlight: 4]
+ 	@Override
+	protected void onCreate(Bundle instance) {
+		super.onCreate(instance);
+		Entity entity = requestFactory.create().createEntity();
+		show(entity);
+	}
+```
+
+
+——-
+
+
+# Create unit test
+
+```java, [.highlight: 4,5]
+ 	@Override
+	protected void onCreate(Bundle instance) {
+		super.onCreate(instance);
+		GetEntityRequest request = requestFactory.create();
+		Entity entity = request.createEntity();
+		show(entity);
+	}
+```
+
+——-
+
+# Create unit test
+
+```java
+ 	
+	@VisibleForTesting
+	protected Entity loadEntity() {
+		return requestFactory.create().createEntity();
+	}
+```
+
+——-
+
+# Create unit test
+
+```java
+ 	
+	@VisibleForTesting
+	protected Observable<Entity> loadEntity() {
+		return Single.just(
+			requestFactory.create().createEntity()
+		);
+	}
+```
+
+——-
+
+# Create unit test
+
+```java, [.highlight: 4,7-9]
+ 	@Override
+	protected void onCreate(Bundle instance) {
+		super.onCreate(instance);
+		loadEntity()
+			.subscribeOn(Schedulers.io())
+			.observeOn(AndroidSchedulers.mainThread());
+			.subscribe({entity, throwable} -> {
+				show(entity);
+			});
+		
+	}
+```
+
+——-
+
+# Create unit test
+
+```java, [.highlight: 4]
+ 	@Override
+	protected void onCreate(Bundle instance) {
+		super.onCreate(instance);
+		viewModel.loadEntity()
+			.subscribeOn(Schedulers.io())
+			.observeOn(AndroidSchedulers.mainThread());
+			.subscribe({entity, throwable} -> {
+				show(entity);
+			});
+		
+	}
+```
+
+
+——-
+
+# Create unit test
+
+```java
+ 	@Test
+	public void shouldLoadEntity() {
+		ViewModel viewModel = new ViewModel();
+		
+		viewModel.loadEntity()
+			.subscribe({entity, throwable} -> {
+				checkEntity(entity);
+			});
+		
+	}
+```
+
+——-
+
+# Create unit test
+
+```java
+ 	
+	public void checkEntity(Entity entity) {
+		assertEquals(NAME, entity.getName());
+		assertEquals(ID, entity.getId());
+		…
+	}
+```
+
+——
+
+# Интеграция в приложение - CIDR!
+
+1. Create unit test
+2. Implement
+
+
+——-
+
+# Implement
+
+```java
+ 	
+	public interface EntityDAO {
+		
+		Observable<Entity> loadEntity();
+	}
+```
+
+——-
+
+# Implement
+
+```java
+ 	
+	public class ViewModel {
+
+		@Inject EntityDao entityDao;
+		
+		public Observable<Entity> loadEntity() {
+			return entityDao.loadEntity();
+		}
+	}
+```
+
+
+——-
+
+# Implement
+
+```java
+ 	
+	public class GreenDaoEntityDAO implements EntityDAO {
+		
+		public Observable<Entity> loadEntity() {
+			RxDao<DbEntity> rxDao = daoSession.getEntityDao().rx();
+			return rxDao.load();
+		}
+	}
+```
+
+——-
+
+# The problem
+
+1. The object from the database is not actually what you want to use on the UI.
+2. More likely you have Entity and DbEntity.
+3. What to do? 
+
+
+——-
+
+# Converters!
+
+——-
+
+# Converters
+
+```java 	
+	public class GreenDaoEntityDAO implements EntityDAO {
+		
+		public Observable<Entity> loadEntity() {
+			RxDao<DbEntity> rxDao = daoSession.getEntityDao().rx();
+			return rxDao.load().flatMap(dbEntity -> convert(dbEntity));
+		}
+		
+	}
+```
+
+——-
+
+# Converters
+
+```java, [.highlight: 5]
+ 	
+	public class GreenDaoEntityDAO implements EntityDAO {
+		
+		public Observable<Entity> loadEntity() {
+			RxDao<DbEntity> rxDao = daoSession.getEntityDao().rx();
+			return rxDao.load().flatMap(dbEntity -> convert(dbEntity));
+		}
+		
+	}
+```
+
+——-
+
+# The problem #2
+
+1. The juniors don’t give a damn about your architecture
+
+
+——-
+
+# Image somebody needs application data…
+
+```java, [.highlight: 4,6]
+ 	
+	public class GreenDaoEntityDAO implements EntityDAO {
+		
+		public Observable<Entity> loadEntity() {
+			String userId = ApplicationSettings.getUserId();
+			RxDao<DbEntity> rxDao = daoSession.getEntityDao().rx();
+			return rxDao.load(userId).flatMap(dbEntity -> convert(dbEntity));
+		}
+		
+	}
+```
+
+——-
+
+# Image somebody needs application data…
+
+* Move the layer to a separate module
+* And cover it with tests
+* And ship it binary
+
+——
+
+# Интеграция в приложение - CIDR!
+
+1. Create unit test
+2. Implement
+3. Deprecate
+
+
+——
+
+# Интеграция в приложение - CIDR!
+
+1. Create unit test
+2. Implement
+3. Deprecate
+
+
+——-
+
+# Deprecate
+
+```java, [.highlight: 1-4,6,8]
+
+/**
+ * @deprecated Please, use {@link EntityDao#loadEntity()}
+ */
+@Deprecated
+@AutoFactory
+public class GetEntityRequest {
+...
+}
+
+```
+
+——-
+
+# Интеграция в приложение - CIDR!
+
+1. Create unit test
+2. Implement
+3. Deprecate
+4. Replace
 
 
 ——-
@@ -229,3 +676,16 @@ MobSF/Akana/Whatever Security Analysis tool
 # Финальная статистика
 
 
+0. 4 базы данных
+1. 30 таблиц
+2. 84 класса для доступа к данным (было 278)
+3. 7400 строк кода вместе с тестами(было 20,000 без тестов)
+4. 100% фактического покрытия(было 0%)
+
+——-
+
+# QA
+
+![center original](victory.png)
+
+——-
