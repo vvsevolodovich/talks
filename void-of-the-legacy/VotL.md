@@ -41,9 +41,9 @@ build-lists: true
 # Что есть тех.долг? 
 
 * Ошибки и уязвимости
-* Сопровождаемость
+* Проблемы сопровождаемости
 * Дублирование кода
-* Процент покрытия тестами
+* Низкий процент покрытия тестами
 
 
 ———
@@ -126,10 +126,6 @@ MobSF/Akana/Whatever Security Analysis tool
 * Быть производительным
 * Быть локализуемым
 * Работать оффлайн
-
-——-
-
-# Какая архитектура отвечает этим требованиям? 
 
 ——-
 
@@ -302,10 +298,10 @@ public class MyEntityActivity extends Activity {
 
 # В чем проблема?
 
-0. Disk access on UI thread 
-1. Boilerplate
-2. View layer accesses data layer hardening the unit tests
-3. You don’t give a damn about your data model
+0. Чтение диска на UI 
+1. Большое количество кода, чтобы работало
+2. Слой представления имеет доступ к данным, затрудняя юнит-тестирование
+3. Вы не знаете свою модель данных
 
 
 ——
@@ -552,20 +548,19 @@ public class MyEntityActivity extends Activity {
 
 ——-
 
-# The problem
+# Проблема №1
 
-1. The object from the database is not actually what you want to use on the UI.
-2. More likely you have Entity and DbEntity.
-3. What to do? 
-
-
-——-
-
-# Converters!
+1. Обьект из базы - это не то, что удобно использовать в представлении 
+2. Скорее у вас есть Entity и DbEntity.
+3. Что же делать? 
 
 ——-
 
-# Converters
+# Конвертеры!
+
+——-
+
+# Конвертеры
 
 ```java 	
 	public class GreenDaoEntityDAO implements EntityDAO {
@@ -580,7 +575,7 @@ public class MyEntityActivity extends Activity {
 
 ——-
 
-# Converters
+# Конвертеры
 
 ```java, [.highlight: 5]
  	
@@ -596,14 +591,13 @@ public class MyEntityActivity extends Activity {
 
 ——-
 
-# The problem #2
+# Проблема №2
 
-1. The juniors don’t give a damn about your architecture
-
+1. Младшим разработчикам наплевать на эту вашу архитектуру
 
 ——-
 
-# Image somebody needs application data…
+# Понадобилось кому почитать данные из модуля приложения…
 
 ```java, [.highlight: 4,6]
  	
@@ -620,11 +614,11 @@ public class MyEntityActivity extends Activity {
 
 ——-
 
-# Image somebody needs application data…
+# Понадобилось кому почитать данные из модуля приложения…
 
-* Move the layer to a separate module
-* And cover it with tests
-* And ship it binary
+* Переносим слой в отдельный модуль
+* Покрываем его тестами
+* Поставляем бинарно
 
 ——
 
