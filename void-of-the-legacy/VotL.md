@@ -2,18 +2,17 @@ slidenumbers: true
 autoscale: true
 build-lists: true
 
-# Void of the Legacy
 
 ![center original](artanis.jpg)
 
 ---
 
-#About me
+# О докладчике
 
-* Vladimir Ivanov - Lead software engineer
-* More than 6 years in Android development
-* Wide interest in Mobile technologies
-* Happy father of a wonderful son
+* Владимир Иванов
+* Больше 6 лет разработки под Android
+* Больше 15 опубликованных приложений 
+* Широкий кругозор в мобильных технологиях
 
 ——-
 
@@ -26,15 +25,21 @@ build-lists: true
 
 ——-
 
+# Как это Legacy мерять?
+
+——-
 
 # Как это Legacy мерять?
 
-* $$L$$ = T$$ * $$H [^1]
-* Но как определить T?
+$$L$$ = T$$ * $$H [^1]
 
 [^1]: 
  	T - время техдолга в часах, H - часовая ставка разработчика
 
+
+——-
+
+# Но как определить T?
 
 ——-
 
@@ -94,7 +99,7 @@ MobSF/Akana/Whatever Security Analysis tool
 
 # Что такое архитектура? 
 
-* Архитектура - это набор структур, состоящих из компонентов и связей между ними, а также свойств одних и вторых, определяющих свойства системы [^2]
+Архитектура - это набор структур, состоящих из компонентов и связей между ними, а также свойств одних и вторых, определяющих свойства системы [^2]
 
 
 [^2]: 
@@ -118,14 +123,30 @@ MobSF/Akana/Whatever Security Analysis tool
 
 ———
 
+# Какие наши целевые свойства? 
 
-# Какими свойствами должно обладать наше Legacy, чтобы быть конфеткой?
-
-* Быть расширяемым
 * Быть тестируемым
 * Быть производительным
 * Быть локализуемым
 * Работать оффлайн
+* Быть расширяемым
+
+——-
+
+# Расширяемость
+
+* Изменения неизбежны
+* Сколько стоят реализация изменений:
+  - Сколько стоит создание механизма для осуществления изменений?
+  - Сколько стоит осуществление изменения с помощью этого механизма? 
+
+——-
+
+# Расширяемость
+
+Для N похожих изменений примерное уравнение равно: 
+
+$$ N $$ * $$ ChangeCost $$ <= $$ MechanismCost $$ + $$ N $$ * ( $$ Change2Cost $$ )
 
 ——-
 
@@ -143,7 +164,6 @@ MobSF/Akana/Whatever Security Analysis tool
 
 ——-
 
-
 # Какая архитектура отвечает этим требованиям? 
 
 * Clean architecture
@@ -155,6 +175,21 @@ MobSF/Akana/Whatever Security Analysis tool
 ![fit original](android-arch.png)
 
 ——-
+
+# Какая архитектура отвечает этим требованиям? 
+
+* Clean architecture
+* Google Android architecture
+* VIPER
+
+——-
+
+
+# Что общего?
+
+
+——-
+
 
 # Что общего?
 
@@ -201,7 +236,7 @@ public class Entity {
 
 ——
 
-# Типичный пример - запрос Entity
+# Пример - запрос Entity
 
 ```java
 	@AutoFactory
@@ -226,7 +261,7 @@ public class Entity {
 
 ——
 
-# Типичный пример - запрос Entity
+# Пример - запрос Entity
 
 ```java
 	@Override
@@ -245,7 +280,7 @@ public class Entity {
 ——-
 
 
-# Типичный пример - запрос Entity
+# Пример - запрос Entity
 
 ```java, [.highlight: 1,2]
 	@AutoFactory
@@ -256,7 +291,7 @@ public class Entity {
 
 ——
 
-# Типичный пример - запрос Entity
+# Пример - запрос Entity
 
 ```java, [.highlight: 1, 2, 6-10]
 	@AutoFactory
@@ -307,10 +342,7 @@ public class MyEntityActivity extends Activity {
 ——
 
 
-# План действий
-
 ![fit original](plan.jpg)
-
 
 ——-
 
@@ -318,7 +350,6 @@ public class MyEntityActivity extends Activity {
 
 1. Отдельный модуль
 2. Покрытый на 100% тестами
-3. Внедряемый в приложение
 
 
 ——-
@@ -331,17 +362,139 @@ public class MyEntityActivity extends Activity {
 
 ——-
 
+
 # Как осознать модель данных
 
-1. Stetho [^4]
-2. Db files
-3. sqlbrite [^5]
+——-
+
+# Как осознать модель данных
+
+Stetho [^4]
 
 [^4]:  	http://facebook.github.io/stetho/
 
-[^5]:	https://github.com/square/sqlbrite
+——-
 
-——
+# Как осознать модель данных
+
+Stetho [^4]
+Db files
+
+[^4]:  	http://facebook.github.io/stetho/
+
+——-
+
+# Как осознать модель данных
+
+Stetho [^4]
+Db files
+sqldelight [^5]
+
+[^4]:  	http://facebook.github.io/stetho/
+
+[^5]:	https://github.com/square/sqldelight
+
+——-
+
+
+# Stetho
+
+```java
+
+compile 'com.facebook.stetho:stetho:1.5.0'
+
+```
+
+——-
+
+# Stetho
+
+
+```java
+public class MyApplication extends Application {
+  …
+  public void onCreate() {
+    super.onCreate();
+    …
+    Stetho.initializeWithDefaults(this);
+  }
+}
+```
+
+——-
+
+![fit original](stetho.png)
+
+——-
+
+#sqldelight
+
+```groovy
+buildscript {
+  repositories {
+    mavenCentral()
+  }
+  dependencies {
+    classpath 'com.squareup.sqldelight:gradle-plugin:0.6.1'
+  }
+}
+
+apply plugin: 'com.squareup.sqldelight'
+
+```
+
+——-
+
+# sqldelight
+
+```sql
+CREATE TABLE entity (
+  _id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+  name TEXT NOT NULL
+);
+```
+
+——-
+
+
+# sqldelight
+
+```java
+public class Entity {
+
+  private Long id;
+
+  private String name;
+
+  public Long getId() { … }
+  public String getName() { … }
+);
+```
+
+
+——-
+
+
+# sqldelight
+
+```java
+
+@Table(name = “Entity”)
+public class Entity {
+
+  @Column(name = “_id”)
+  private Long _id;
+
+  @Column(name = “NAME”)
+  private String name;
+
+  public Long getId() { … }
+  public String getName() { … }
+);
+```
+
+——-
+
 
 # Интеграция в приложение - CIDR!
 
@@ -597,7 +750,7 @@ public class MyEntityActivity extends Activity {
 
 ——-
 
-# Понадобилось кому почитать данные из модуля приложения…
+# Данные из модуля приложения…
 
 ```java, [.highlight: 4,6]
  	
@@ -673,13 +826,31 @@ public class GetEntityRequest {
 0. 4 базы данных
 1. 30 таблиц
 2. 84 класса для доступа к данным (было 278)
-3. 7400 строк кода вместе с тестами(было 20,000 без тестов)
-4. 100% фактического покрытия(было 0%)
+3. 7400 строк кода вместе с тестами (было 20,000 без тестов)
+4. 100% фактического покрытия (было 0%)
 
 
 ——-
 
 ![fit](sonarfinal.jpg)
+
+——-
+
+
+# Где еще можно использовать такой подход? 
+
+* Переделывая взаимодействие с сетью
+* Переходя на MVVM
+* Вообще, вводя любой новый слой
+
+
+——-
+
+# Где этот подход не помогает? 
+
+* С секьюрити
+* С тулами
+* С любым cross-componenent code 
 
 ——-
 
