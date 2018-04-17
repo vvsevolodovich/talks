@@ -2,22 +2,21 @@ slidenumbers: true
 autoscale: true
 build-lists: true
 
-## Forget RxJava: Introducing Kotlin couroutines
+## Скрипач не нужен: отказываемся от  RxJava в пользу корутин в Kotlin
 
 ---
 
 # Disclaimer
 
-Everything said here is just a product of production and research experience; there could be mistakes, inaccurate statements, or just fallacies. Check everything by yourself.
+Все сказанное здесь является продуктом боевого и исследовательского опыта. Возможны допущения, опечатки, неточности или ошибки. Проверяйте все сами.
 
 ---
 
+# О докладчике
 
-# About me
-
-* Vladimir Ivanov - Lead Software Engineer in EPAM
-* Android apps: > 15 published, > 7 years
-* Wide expertise in Mobile
+* Владимир Иванов(EPAM Systems)
+* Android приложения: > 15 опубликованных, > 7 лет опыта
+* Широкий интерес в мобильных технологиях
 
 ---
 
@@ -30,7 +29,7 @@ Everything said here is just a product of production and research experience; th
 
 ---
 
-![fit](http://s.quickmeme.com/img/eb/eb75db1d1bef49a91d7ebed0edb00cd0916f1219264a41f195f9a2ea025212a3.jpg)
+![fit](https://levashove.ru/wp-content/uploads/2018/04/kindzadza.jpg)
 
 ---
 
@@ -56,15 +55,15 @@ export const loginAsync = async (login, password) => {
 ```
 ---
 
-# Easy to read?
+# Легко читается?
 
 ---
 
-# Kotlin can do this too!
+# Kotlin может также!
 
 ---
 
-# What do we do now?
+# Что мы с вами делаем сейчас?
 
 ---
 
@@ -87,7 +86,7 @@ export const loginAsync = async (login, password) => {
 
 ---
 
-![fit](http://2.bp.blogspot.com/_c0Fx9w6DelI/TN_dg-Z1jDI/AAAAAAAAAvs/Jkcz4UCPzg8/s1600/IMG_1145.jpg)
+![fit](http://www.vothouse.ru/img/films/20101028/kin-dza-dza.jpg)
 
 
 ---
@@ -178,10 +177,11 @@ private fun attemptLoginRx() {
 			.observeOn(AndroidSchedulers.mainThread())
 			.doFinally { showProgress(false) }
 			.subscribe(
-					{ list -> showRepositories(this@LoginActivity, list)    },
+					{ list -> showRepositories(this, list)    },
 					{ error -> Log.e("TAG", "Failed to show repos", error) }
 			)
 }
+
 ```
 
 ---
@@ -201,7 +201,7 @@ private fun attemptLoginRx() {
 			.observeOn(AndroidSchedulers.mainThread())
 			.doFinally { showProgress(false) }
 			.subscribe(
-					{ list -> showRepositories(this@LoginActivity, list)    },
+					{ list -> showRepositories(this, list)    },
 					{ error -> Log.e("TAG", "Failed to show repos", error) }
 			)
 
@@ -227,7 +227,7 @@ private fun attemptLoginRx() {
 			.observeOn(AndroidSchedulers.mainThread())
 			.doFinally { showProgress(false) }
 			.subscribe(
-					{ list -> showRepositories(this@LoginActivity, list)    },
+					{ list -> showRepositories(this, list)    },
 					{ error -> Log.e("TAG", "Failed to show repos", error) }
 			)
 
@@ -251,7 +251,7 @@ private fun attemptLoginRx() {
 			.observeOn(AndroidSchedulers.mainThread())
 			.doFinally { showProgress(false) }
 			.subscribe(
-					{ list -> showRepositories(this@LoginActivity, list)    },
+					{ list -> showRepositories(this, list)    },
 					{ error -> Log.e("TAG", "Failed to show repos", error) }
 			)
 }
@@ -260,15 +260,15 @@ private fun attemptLoginRx() {
 
 ---
 
-# Problems?
+# Сложности?
 
 ---
 
-# Problems?
+# Сложности?
 
-* A lot of intermediate objects created under the hood
-* Unrelated stacktrace
-* The learning curve for new developers is steppy
+* Большое количество обьектов под капотом
+* Неясный стектрейс
+* Крутая кривая обучения
 
 ---
 
@@ -296,7 +296,7 @@ val doFinally = observeOn
 // new ConsumerSingleObserver
 val subscribe = doFinally
 		.subscribe(
-				{ list -> showRepositories(this@LoginActivity, list) },
+				{ list -> showRepositories(this, list) },
 				{ error -> Log.e("TAG", "Failed to show repos", error) }
 		)
 	}
@@ -329,12 +329,19 @@ at com.epam.talks.github.model.ApiClientRx$ApiClientRxImpl$login$1.call(ApiClien
 ---
 
 
-# Let’s see if Kotlin coroutines can help here
+![fit](https://i.ytimg.com/vi/oEsJh7u7MNE/maxresdefault.jpg)
 
 
 ---
 
-# Coroutines implementation
+# Корутины в Котлине
+
+* Доступны с kotlin 1.1
+* Статус experimental, но апи стабилизировано
+
+---
+
+# Реализация на корутинах
 
 ```kotlin
 
@@ -353,7 +360,7 @@ interface ApiClient {
 
 ---
 
-# Coroutines implementation
+# Реализация на корутинах
 
 ```kotlin, [.highlight: 4,7]
 
@@ -381,11 +388,11 @@ private fun attemptLogin() {
 			val repoUrl = userInfo.repos_url
 			val list = apiClient.getRepositories(repoUrl, auth).await()
 			showRepositories(
-				this@LoginActivity, 
+				this, 
 				list.map { it -> it.full_name }
 			)
 		} catch (e: RuntimeException) {
-			Toast.makeText(this@LoginActivity, e.message, LENGTH_LONG).show()
+			showToast("Oops!")
 		} finally {
 			showProgress(false)
 		}
@@ -396,20 +403,45 @@ private fun attemptLogin() {
 ```
 ---
 
-# Pluses
+```kotlin, [.highlight: 2, 6, 8]
 
-* Easy to read(as js), because
-* Code is async, but written as sync
-* Error handling like for sync code(try-catch-finally)
+private fun attemptLogin() {
+	launch(UI) {
+		val auth = BasicAuthorization(login, pass)
+		try {
+			showProgress(true)
+			val userInfo = apiClient.login(auth).await()
+			val repoUrl = userInfo.repos_url
+			val list = apiClient.getRepositories(repoUrl, auth).await()
+			showRepositories(
+				this, 
+				list.map { it -> it.full_name }
+			)
+		} catch (e: RuntimeException) {
+			showToast("Oops!")
+		} finally {
+			showProgress(false)
+		}
+	}
+}
+
+```
+---
+
+# Плюсы
+
+* Легко читается, ибо
+* Асинхронный код написан в direct-стиле
+* Обработка ошибок, как для синхронного кода(try-catch-finally)
 
 ---
 
-# What about minuses of RxJava?
+# Как насчет минусов RxJava?
 
 ---
 
 
-# Allocations?
+# Обьекты?
 
 ---
 
@@ -421,7 +453,7 @@ private fun attemptLogin() {
 
 ---
 
-# Stacktraces?
+# Стектрейс?
 
 ---
 
@@ -448,7 +480,7 @@ at com.epam.talks.github.model.ApiClient$ApiClientImpl$login$1.doResume(ApiClien
 
 ---
 
-# Sync-styled
+# Прямой стиль кода
 
 ```kotlin, [.highlight: 5, 11, 9, 13]
 
@@ -460,9 +492,9 @@ private fun attemptLogin() {
 			val userInfo = login(auth).await()
 			val repoUrl = userInfo!!.repos_url
 			val list = getRepositories(repoUrl, auth).await()
-			showRepositories(this@LoginActivity, list.map { it -> it.full_name })
+			showRepositories(this, list.map { it -> it.full_name })
 		} catch (e: RuntimeException) {
-			Toast.makeText(this@LoginActivity, e.message, LENGTH_LONG).show()
+			showToast("Oops!")
 		} finally {
 			showProgress(false)
 		}
@@ -474,7 +506,7 @@ private fun attemptLogin() {
 
 ---
 
-## Error handling using language(not library methods)
+## Обработка ошибок средствами языка(не методами библиотеки)
 
 ```kotlin, [.highlight: 4,10-14]
 
@@ -486,9 +518,9 @@ private fun attemptLogin() {
 			val userInfo = login(auth).await()
 			val repoUrl = userInfo!!.repos_url
 			val list = getRepositories(repoUrl, auth).await()
-			showRepositories(this@LoginActivity, list.map { it -> it.full_name })
+			showRepositories(this, list.map { it -> it.full_name })
 		} catch (e: RuntimeException) {
-			Toast.makeText(this@LoginActivity, e.message, LENGTH_LONG).show()
+			showToast("Oops!")
 		} finally {
 			showProgress(false)
 		}
@@ -499,20 +531,22 @@ private fun attemptLogin() {
 ```
 ---
 
-## Several async calls look sequential
+## Использование stdlib
 
-```kotlin, [.highlight: 5,7,8]
+```kotlin, [.highlight: 5,7,8-10]
 launch(UI) {
 	showProgress(true)
 	val auth = BasicAuthorization(login, pass)
 	try {
-		val userInfo = login(auth).await()
+		val userInfo = apiClient.login(auth).await()
 		val repoUrl = userInfo!!.repos_url
-		val repos = getRepositories(repoUrl, auth).await()
-		val pullRequests = getPullRequests(repos!![0], auth).await()
-		showRepositories(this@LoginActivity, repos!!.map { it -> it.full_name })
+		val repos = apiClient.getRepositories(repoUrl, auth).await()
+		repeat(list.size, {
+			apiClient.getRepoFollowers().await()
+		})
+		showRepositories(this, repos!!.map { it -> it.full_name })
 	} catch (e: RuntimeException) {
-		Toast.makeText(this@LoginActivity, e.message, LENGTH_LONG).show()
+		showToast("Oops!")
 	} finally {
 		showProgress(false)
 	}
@@ -521,7 +555,7 @@ launch(UI) {
 ```
 ---
 
-# Async function implementation
+# Реализация асинхронной функции
 
 ```kotlin
 override fun login(auth: Authorization) : Deferred<GithubUser?> = async {
@@ -539,7 +573,7 @@ override fun login(auth: Authorization) : Deferred<GithubUser?> = async {
 ```
 ---
 
-# Async function implementation
+# Реализация асинхронной функции
 
 ```kotlin, [.highlight: 2-11]
 override fun login(auth: Authorization) : Deferred<GithubUser?> = async {
@@ -557,7 +591,7 @@ override fun login(auth: Authorization) : Deferred<GithubUser?> = async {
 ```
 ---
 
-# Using Async HOF
+# Использование ФВП Async
 
 ```kotlin
 fun login(...) : Deferred<GithubUser?> = async {
@@ -571,11 +605,11 @@ fun login(...) : Deferred<GithubUser?> = async {
 
 ---
 
-# What is Async?
+# Что такое Async?
 
 ---
 
-# Coroutine builders
+# Билдер для корутины
 
 
 * launch
@@ -585,7 +619,7 @@ fun login(...) : Deferred<GithubUser?> = async {
 
 ---
 
-# Launch returns Job
+# Launch возвращает Job
 
 ```kotlin 
 
@@ -601,7 +635,7 @@ interface Job : CoroutineContext.Element {
 ```
 ---
 
-# Async returns Deferred<T>
+# Async возвращает Deferred<T>
 
 ```kotlin
 
@@ -614,7 +648,7 @@ public actual interface Deferred<out T> : Job {
 
 ---
 
-# Deferred is Future
+# Deferred это Future
 
 
 ---
@@ -627,25 +661,25 @@ public actual interface Deferred<out T> : Job {
 
 ---
 
-![fit](notreally.jpeg)
+![fit](https://uenews.ru/uploads/posts/2017-05/149526489380503516206238599.jpeg)
 
 ---
 
 
 # Deferred is Future
 
-* Non-blocking
-* Cancellable
+* неблокирующее
+* отменяемое
 
 ---
 
-## Await - extension function
+## Await - extension-функция
 
 ---
 
-## Await - extension function
+## Await - extension-функция
 
-* Is like Future.get() but suspends instead of blocking
+* Как Future.get(), только неблокирующая
 
 ---
 
@@ -668,15 +702,15 @@ public actual interface Deferred<out T> : Job {
 
 # Suspending
 
-* means pause of executing
-* which means ability to resume
-* But suspend may happen only in predefined places
-* When calling functions with ```suspend``` modifier!
+* приостановка выполнения
+* то есть, выполнение может быть восстановлено
+* Приостановка случается только в определенных местах
+* При вызове функций с  модификатором ```suspend```!
 
 
 ---
 
-# Where our suspend?
+# Где же suspend?
 
 
 ---
@@ -707,35 +741,28 @@ public expect fun <T> async(
 ```
 ---
 
-# Cancellation
+# Отмена
 
 ---
 
-# Thread.stop() 
-
-
----
-
-# ~~Thread.stop()~~ 
+## Отмена всегда кооперативна
 
 ---
-
-
-## Cancellation is always cooperative
-
-
----
-
 
 # RxJava 2
 
 ---
  
-# Cancel in RxJava requires access to current subscription
+## Отмена в RxJava в целом ок, но может требовать доступ к текущей подписке
 
 ---
 
-# How to check if coroutine gets cancelled?
+## Отмена в корутинах тоже ок
+
+---
+
+
+## Как проверить отмену?
 
 ---
 
@@ -768,9 +795,11 @@ launch(UI) {
 
 ---
 
-# Let’s write tests!
+# Пишем тесты!
 
 ---
+
+# Тест на RxJava
 
 ```kotlin
 
@@ -788,15 +817,17 @@ launch(UI) {
 							.login(BasicAuthorization("login", "pass"))
 
 			githubUser.subscribe({ githubUser ->
-				Assert.assertNotNull(githubUser)
-				Assert.assertEquals("name", githubUser.name)
-				Assert.assertEquals("url", githubUser.repos_url)
+				assertNotNull(githubUser)
+				assertEquals("name", githubUser.name)
+				assertEquals("url", githubUser.repos_url)
 			})
 
 		}
 	}
 ```
 ---
+
+# Тест на RxJava
 
 ```kotlin
 
@@ -809,9 +840,9 @@ launch(UI) {
 							.login(BasicAuthorization("login", "pass"))
 
 			githubUser.subscribe({ githubUser ->
-				Assert.assertNotNull(githubUser)
-				Assert.assertEquals("name", githubUser.name)
-				Assert.assertEquals("url", githubUser.repos_url)
+				assertNotNull(githubUser)
+				assertEquals("name", githubUser.name)
+				assertEquals("url", githubUser.repos_url)
 			})
 
 		…
@@ -819,6 +850,8 @@ launch(UI) {
 ```
 
 ---
+
+# Тест на корутины
 
 ```kotlin
 @Test
@@ -845,6 +878,8 @@ fun login() {
 ```
 ---
 
+# Тест на корутины
+
 ```kotlin, [.highlight: 4,12]
 @Test
 fun login() {
@@ -862,6 +897,8 @@ fun login() {
 	
 ```
 ---
+
+# Тест на корутины
 
 ```kotlin, [.highlight: 4,12, 6-8]
 @Test
@@ -882,13 +919,11 @@ fun login() {
 
 ---
 
-# So tests are pretty much the same
-
+## Тесты пока выглядят одинаково
 
 ---
 
-
-# What if Coroutines can simplify our interface even more?
+## А можно лучше?
 
 
 ---
@@ -936,9 +971,9 @@ private fun attemptLoginSuspending() {
 			val userInfo = async { apiClient.login(auth) }.await()
 			val repoUrl = userInfo!!.repos_url
 			val list = async { apiClient.getRepositories(repoUrl, auth) }.await()
-			showRepositories(this@LoginActivity, list!!.map { it -> it.full_name })
+			showRepositories(this, list!!.map { it -> it.full_name })
 		} catch (e: RuntimeException) {
-			Toast.makeText(this@LoginActivity, e.message, LENGTH_LONG).show()
+			showToast("Oops!")
 		} finally {
 			showProgress(false)
 		}
@@ -991,19 +1026,160 @@ fun login() = runBlocking {
 	}
 }
 ```
+---
+
+```kotlin
+
+@Test
+fun testLogin() = runBlocking {
+	val apiClient = mockk<SuspendingApiClient.SuspendingApiClientImpl>()
+	val githubUser = GithubUser("login", 1, "url", "name")
+	val repositories = GithubRepository(1, "repos_name", "full_repos_name")
+
+	coEvery { apiClient.login(any()) } returns githubUser
+	coEvery { apiClient.getRepositories(any(), any()) } returns Arrays.asList(repositories)
+
+	val loginPresenterImpl = SuspendingLoginPresenterImpl(apiClient, CommonPool)
+	runBlocking {
+		val repos = loginPresenterImpl.doLogin("login", "password")
+		assertNotNull(repos)
+	}
+}
+
+```
+---
+
+```kotlin, [.highlight: 7,8]
+
+@Test
+fun testLogin() = runBlocking {
+	val apiClient = mockk<SuspendingApiClient.SuspendingApiClientImpl>()
+	val githubUser = GithubUser("login", 1, "url", "name")
+	val repositories = GithubRepository(1, "repos_name", "full_repos_name")
+
+	coEvery { apiClient.login(any()) } returns githubUser
+	coEvery { apiClient.getRepositories(any(), any()) } returns Arrays.asList(repositories)
+
+	val loginPresenterImpl = SuspendingLoginPresenterImpl(apiClient, CommonPool)
+	runBlocking {
+		val repos = loginPresenterImpl.doLogin("login", "password")
+		assertNotNull(repos)
+	}
+}
+
+```
 
 ---
 
-# Short summary
+```kotlin, [.highlight: 9-14]
 
-* Shorter stacktrace, but still unclear
-* Less memory footprint
-* Code is more explicit, therefore easier to read and understand
-* Clean interfaces, clean tests(awesome!)
+@Test
+fun testLogin() = runBlocking {
+	val apiClient = mockk<SuspendingApiClient.SuspendingApiClientImpl>()
+	val githubUser = GithubUser("login", 1, "url", "name")
+	val repositories = GithubRepository(1, "repos_name", "full_repos_name")
+
+	coEvery { apiClient.login(any()) } returns githubUser
+	coEvery { apiClient.getRepositories(any(), any()) } returns Arrays.asList(repositories)
+
+	val loginPresenterImpl = SuspendingLoginPresenterImpl(apiClient, CommonPool)
+	runBlocking {
+		val repos = loginPresenterImpl.doLogin("login", "password")
+		assertNotNull(repos)
+	}
+}
+
+```
+---
+
+# Mockk
+
+```kotlin
+
+coEvery { 
+	apiClient.login(any()) 
+} returns githubUser
+
+```
 
 ---
 
-# Why Rx in the first place?
+# Mockito-kotlin
+```kotlin
+
+given { 
+	runBlocking { 
+		apiClient.login(any()) 
+	} 
+}.willReturn (githubUser)
+
+```
+---
+
+
+# Промежуточные итоги
+
+* Стектрейс стал меньше, но все равно неясный
+* Объектов под капотом создается меньше
+* Код проще писать
+* Интерфейс чище
+* Тесты чище
+
+---
+
+![fit](https://s00.yaplakal.com/pics/pics_original/1/5/4/5939451.jpg)
+
+---
+
+## Лирическое отступление
+
+---
+
+## Обработка ошибок
+
+---
+
+## Обработка ошибок
+* По умолчанию исключение в корутине роняет приложение
+* Если это нежелательно, то нужно менять контекст
+
+---
+
+## CoroutineExceptionHandler
+
+```kotlin
+
+val errorHandler = CoroutineExceptionHandler { _, e -> 
+    // Handle the exception gracefully
+}
+
+```
+
+---
+
+## CoroutineExceptionHandler
+
+```kotlin
+
+val errorHandler = CoroutineExceptionHandler { _, e -> 
+    // Handle the exception gracefully
+}
+
+val context = UI + errorHandler
+
+launch(UI) {
+	…
+}
+
+```
+
+---
+
+![fit](https://cs8.pikabu.ru/images/big_size_comm/2016-02_6/1456742031153676636.jpg)
+
+---
+
+## Зачем нужна RxJava?
 
 ---
 
@@ -1012,7 +1188,7 @@ fun login() = runBlocking {
 
 ---
 
-# Search RxJava 2 implementation
+# Реализация поиска с RxJava 2
 
 ```kotlin
 
@@ -1033,7 +1209,7 @@ publishSubject
 ```
 ---
 
-# Search RxJava 2 implementation
+# Реализация поиска с RxJava 2
 
 ```kotlin, [.highlight: 5]
 
@@ -1054,7 +1230,7 @@ publishSubject
 ```
 ---
 
-# Search RxJava 2 implementation
+# Реализация поиска с RxJava 2
 
 ```kotlin, [.highlight: 9-13]
 
@@ -1075,11 +1251,11 @@ publishSubject
 ```
 ---
 
-# What’s really awesome here?
+# Что классно?
 
 ---
 
-# Search RxJava 2 implementation
+# Реализация поиска с RxJava 2
 
 ```kotlin, [.highlight: 2-4]
 
@@ -1101,15 +1277,15 @@ publishSubject
 
 ---
 
-# We can do the same or better in Kotlin Coroutines… 
+# Корутины тоже могут… 
 
 ---
 
-# …with channels
+# …с каналами
 
 ---
 
-# Search with Channels implementation
+# Реализация поиска с каналами
 
 ```kotlin
 
@@ -1128,7 +1304,7 @@ launch(UI) {
 ```
 ---
 
-# Search with Channels implementation
+# Реализация поиска с каналами
 
 ```kotlin, [.highlight: 4,5]
 
@@ -1148,7 +1324,7 @@ launch(UI) {
 ---
 
 
-# Search with Channels implementation
+# Реализация поиска с каналами
 
 ```kotlin, [.highlight: 6-9]
 
@@ -1167,11 +1343,11 @@ launch(UI) {
 ```
 ---
 
-# What is broadcast? 
+# Что такое броадкаст? 
 
 ---
 
-# Search with Channels implementation
+# Реализация поиска с каналами
 
 ```kotlin, [.highlight: 2]
 
@@ -1214,26 +1390,30 @@ searchQuery.addTextChangedListener(object: TextWatcher {
 
 ---
 
-# Questions
+# Вопросы к этому коду
 
 
 ---
 
-* What are channels?
-* What is a BroadcastChannel?
-* What is a conflated channel?
+* Что за каналы?
+* Что за BroadcastChannel?
+* Что за conflated ?
 
 ---
 
-# What are channels?
+# Что за каналы?
 
 ---
 
-## Channel is a blocking queue 
+![fit](https://cs8.pikabu.ru/post_img/2017/04/10/11/1491847244187159400.jpg)
 
 ---
 
-![fit](notreally.jpeg)
+## Канал - блокирующая очередь 
+
+---
+
+## но не совсем
 
 ---
 
@@ -1254,15 +1434,15 @@ public suspend fun receive(): E
 
 ---
 
-# What is a BroadcastChannel?
+## BroadcastChannel?
 
 ---
 
-# BroadcastChannel is Subject
+## BroadcastChannel - Subject
 
 ---
 
-![fit](notreally.jpeg)
+## но не совсем
 
 
 ---
@@ -1274,37 +1454,34 @@ public suspend fun receive(): E
 
 ---
 
-# What is a conflated channel?
+## Что такое conflated channel?
 
 ---
 
-## ConflatedBroadcastChannel is a BroadcastChannel…
+## BroadcastChannel, но с потерей элементов
 
 ---
 
-## …but previuosly sent elements are lost
+TBD: add more code examples for channels
 
 ---
 
-# Not quite persuasively…
+## Неубедительно! Скрипач нужен!
+
 
 ---
 
-# What if I still need Rx?
+## Неубедительно! Скрипач нужен!?[^1]
+
+[^1]: конечно, нужен, вы же не можете заменить огромную либу одной фичей языка
 
 ---
 
-# What if I still need Rx?[^1]
-
-[^1]: And you actually will, because you can’t compare a language feature with a shittone library
+## Kotlin корутины на самом деле поддерживают Rx…
 
 ---
 
-# Kotlin coroutines actually supports Rx…
-
----
-
-# with kotlinx-coroutines-rx2 
+## c kotlinx-coroutines-rx2 
 
 ---
 
@@ -1324,6 +1501,15 @@ public suspend fun receive(): E
 | Deferred.asSingle	| Converts deferred value to hot single| 
 | ReceiveChannel.asObservable	| Converts streaming channel to hot observable| 
 | Scheduler.asCoroutineDispatcher	| Converts scheduler to CoroutineDispatcher| 
+
+---
+
+## Где применимы конвертеры?
+
+---
+
+* Использование библиотек с Rx-адаптером
+* Написание библиотек на корутиных для использования в приложениях, построенных на Rx
 
 ---
 
