@@ -2,6 +2,7 @@ slidenumbers: true
 autoscale: true
 build-lists: true
 
+
 ## Скрипач не нужен: отказываемся от  RxJava в пользу корутин в Kotlin
 
 ---
@@ -29,7 +30,7 @@ build-lists: true
 
 ---
 
-![fit](https://levashove.ru/wp-content/uploads/2018/04/kindzadza.jpg)
+![fit](question.png)
 
 ---
 
@@ -69,8 +70,9 @@ export const loginAsync = async (login, password) => {
 
 # Github login application
 
-* Login to github
-* Get user’s repositories
+* Вход с логином/паролем
+* Получение репозиториев пользователя
+* Поиск среди всех репозиториев гитхаба
 
 ---
 
@@ -86,7 +88,7 @@ export const loginAsync = async (login, password) => {
 
 ---
 
-![fit](http://www.vothouse.ru/img/films/20101028/kin-dza-dza.jpg)
+![fit](noneed.png)
 
 
 ---
@@ -130,7 +132,27 @@ interface ApiClientRx {
 
 # RxJava 2 implementation
 
-```kotlin
+```kotlin, [.highlight: 3-12] 
+
+	override fun login(auth: Authorization) 
+		: Single<GithubUser?> = Single.fromCallable {
+		val response = get("https://api.github.com/user", auth = auth)
+		if (response.statusCode != 200) {
+			throw RuntimeException("Incorrect login or password")
+		}
+
+		val jsonObject = response.jsonObject
+		with(jsonObject) {
+			return@with GithubUser(getString("login"), getInt("id"),
+					getString("repos_url"), getString("name"))
+		}
+	}
+```
+---
+
+# RxJava 2 implementation
+
+```kotlin, [.highlight: 1-2, 13] 
 
 	override fun login(auth: Authorization) 
 		: Single<GithubUser?> = Single.fromCallable {
@@ -1036,8 +1058,10 @@ fun testLogin() = runBlocking {
 	val githubUser = GithubUser("login", 1, "url", "name")
 	val repositories = GithubRepository(1, "repos_name", "full_repos_name")
 
-	coEvery { apiClient.login(any()) } returns githubUser
-	coEvery { apiClient.getRepositories(any(), any()) } returns Arrays.asList(repositories)
+	coEvery { apiClient.login(any()) } 
+		returns githubUser
+	coEvery { apiClient.getRepositories(any(), any()) } 
+		returns Arrays.asList(repositories)
 
 	val loginPresenterImpl = SuspendingLoginPresenterImpl(apiClient, CommonPool)
 	runBlocking {
@@ -1049,7 +1073,7 @@ fun testLogin() = runBlocking {
 ```
 ---
 
-```kotlin, [.highlight: 7,8]
+```kotlin, [.highlight: 7-10]
 
 @Test
 fun testLogin() = runBlocking {
@@ -1057,8 +1081,10 @@ fun testLogin() = runBlocking {
 	val githubUser = GithubUser("login", 1, "url", "name")
 	val repositories = GithubRepository(1, "repos_name", "full_repos_name")
 
-	coEvery { apiClient.login(any()) } returns githubUser
-	coEvery { apiClient.getRepositories(any(), any()) } returns Arrays.asList(repositories)
+	coEvery { apiClient.login(any()) } 
+		returns githubUser
+	coEvery { apiClient.getRepositories(any(), any()) } 
+		returns Arrays.asList(repositories)
 
 	val loginPresenterImpl = SuspendingLoginPresenterImpl(apiClient, CommonPool)
 	runBlocking {
@@ -1071,7 +1097,7 @@ fun testLogin() = runBlocking {
 
 ---
 
-```kotlin, [.highlight: 9-14]
+```kotlin, [.highlight: 7-16]
 
 @Test
 fun testLogin() = runBlocking {
@@ -1079,8 +1105,10 @@ fun testLogin() = runBlocking {
 	val githubUser = GithubUser("login", 1, "url", "name")
 	val repositories = GithubRepository(1, "repos_name", "full_repos_name")
 
-	coEvery { apiClient.login(any()) } returns githubUser
-	coEvery { apiClient.getRepositories(any(), any()) } returns Arrays.asList(repositories)
+	coEvery { apiClient.login(any()) } 
+		returns githubUser
+	coEvery { apiClient.getRepositories(any(), any()) } 
+		returns Arrays.asList(repositories)
 
 	val loginPresenterImpl = SuspendingLoginPresenterImpl(apiClient, CommonPool)
 	runBlocking {
@@ -1127,7 +1155,7 @@ given {
 
 ---
 
-![fit](https://s00.yaplakal.com/pics/pics_original/1/5/4/5939451.jpg)
+![fit](cool.png)
 
 ---
 
@@ -1142,6 +1170,7 @@ given {
 ## Обработка ошибок
 * По умолчанию исключение в корутине роняет приложение
 * Если это нежелательно, то нужно менять контекст
+* Если ошибки разные, их много и они на разных слоях, то нужно менять контекст
 
 ---
 
@@ -1167,7 +1196,7 @@ val errorHandler = CoroutineExceptionHandler { _, e ->
 
 val context = UI + errorHandler
 
-launch(UI) {
+launch(context) {
 	…
 }
 
@@ -1201,9 +1230,7 @@ publishSubject
 	.subscribeOn(Schedulers.io())
 	.observeOn(AndroidSchedulers.mainThread())
 	.subscribe({
-		repos.adapter = ReposAdapter(
-			it.map { it.full_name },
-			this@RepositoriesActivity)
+		repos.adapter = ReposAdapter(it.map { it.full_name }, this)
 	})
 
 ```
@@ -1222,9 +1249,7 @@ publishSubject
 	.subscribeOn(Schedulers.io())
 	.observeOn(AndroidSchedulers.mainThread())
 	.subscribe({
-		repos.adapter = ReposAdapter(
-			it.map { it.full_name },
-			this@RepositoriesActivity)
+		repos.adapter = ReposAdapter(it.map { it.full_name }, this)
 	})
 
 ```
@@ -1243,9 +1268,7 @@ publishSubject
 	.subscribeOn(Schedulers.io())
 	.observeOn(AndroidSchedulers.mainThread())
 	.subscribe({
-		repos.adapter = ReposAdapter(
-			it.map { it.full_name },
-			this@RepositoriesActivity)
+		repos.adapter = ReposAdapter(it.map { it.full_name }, this)
 	})
 
 ```
@@ -1347,25 +1370,6 @@ launch(UI) {
 
 ---
 
-# Реализация поиска с каналами
-
-```kotlin, [.highlight: 2]
-
-launch(UI) {
-	broadcast.consumeEach {
-		delay(300)
-		val foundRepositories = 
-				apiClient.searchRepositories(it).await()
-		repos.adapter = ReposAdapter(
-							foundRepositories.map { it.full_name },
-							this@RepositoriesActivity
-		)
-	}
-}
-
-```
----
-
 ```kotlin
 
 val broadcast = ConflatedBroadcastChannel<String>()
@@ -1462,10 +1466,6 @@ public suspend fun receive(): E
 
 ---
 
-TBD: add more code examples for channels
-
----
-
 ## Неубедительно! Скрипач нужен!
 
 
@@ -1513,10 +1513,15 @@ TBD: add more code examples for channels
 
 ---
 
+![fit](ku.png)
+
+---
+
 # Links
 
-* https://github.com/Kotlin/kotlinx.coroutines :computer:
-* https://github.com/vlivanov/github-kotlin-coroutines :computer:
+* https://github.com/vlivanov/github-kotlin-coroutines
+* https://github.com/oleksiyp/mockk
+* http://khttp.readthedocs.io :computer:
 * https://twitter.com/vvsevolodovich :bird:
 * https://medium.com/@dzigorium :pencil:
 
