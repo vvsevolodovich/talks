@@ -1,10 +1,10 @@
-footer: *<EPAM> | Confidential*
+footer: EPAM Systems
 slidenumbers: true
 slidecount: true
 autoscale: true
 build-lists: true
 
-Role of Solution Architect in a Software Project
+![center](title.png)
 
 ---
 
@@ -19,7 +19,22 @@ Everything presented here is a product of production experience and research fin
 * Vladimir Ivanov - Lead Software Engineer
 * Primary Skill: Android
 * React Native Experience > 2 year
-* SA on several prod& non-prod projects
+* Doing some Solution Architecture from time to time
+* Certified Google Cloud Architect
+
+---
+
+[.build-lists: false]
+
+# About me
+
+* Vladimir Ivanov - Lead Software Engineer
+* Primary Skill: Android
+* React Native Experience > 2 year
+* Doing some Solution Architecture from time to time
+* Certified Google Cloud Architect
+
+![fit right](gcp.png)
 
 ---
 
@@ -27,29 +42,52 @@ Everything presented here is a product of production experience and research fin
 
 ---
 
-# Project roles
-
-* Software engineers
-* QA Engineers
-* Project manager
-* Product owner
-* BA
-* ???
+![center](project.png)
 
 ---
 
-# Software engineer
+# RFI
 
-* implements user-stories
-* obtained from BA
-
---- 
-
-# Where does BA get the stories?
+## Request for information
 
 ---
 
-# He/She collects the requirements from the customer
+# RFI
+
+* Answer the questions
+* Contact the architects of related fields
+* Perform the required research
+
+---
+
+# RFP
+
+## Request for proposal
+
+---
+
+# RFP
+
+* Understand the business value 
+* Create a solution architecture
+* Understand which teams are necessary to implement that solution 
+* Come up with the resource plan
+
+---
+
+![center](project.png)
+
+---
+
+# Discovery
+
+---
+
+# Requirements gathering
+
+* Functional
+* Non-functional
+* Constraints
 
 ---
 
@@ -66,7 +104,6 @@ Everything presented here is a product of production experience and research fin
 * The application should open the page under 0.5 second
 * The application should be available 23 hours per day 
 
-
 --- 
 
 # Constraints
@@ -76,18 +113,15 @@ Everything presented here is a product of production experience and research fin
 
 ---
 
-# Requirements are:
-
-* Functional
-* Non-functional
-* Constraints
+# Some of them will change the architecture of the solution.
 
 ---
 
-# Some of them will change the architecture of the solution.
+# Every additional 9 of availability doubles the complexity of a target system.
 
-For example, the change of availability from 95% to 99% changes half of the architecture.
+---
 
+![fit](cost.png)
 
 ---
 
@@ -109,7 +143,7 @@ Stakeholders are the people who have an interest in the project
 
 ## In order to gather requirements you need to talk to stakeholders. 
 
-## The stakeholders identification is a first responsibility of a Solution Architect.
+## The stakeholders identification is one of the main responsibilities of a Solution Architect.
 
 ---
 
@@ -132,61 +166,85 @@ The set of structures needed to reason about the system, which comprises softwar
 
 ---
 
-# Why bother in a first place?
+# ASRs
 
----
-
-# Why bother in a first place?
-
-* Because developing a product costs money.
-* Thinking beforehand costs much less. 
+## Target system properties which affects architecture are unsurprisingly called architecturally significant requirements.  
 
 ---
 
 # How to identify ASR? 
 
-Utility tree!
+* From requirements documents
+* By interviewing stakeholders
+* By understanding the business goals
+* Utility tree!
 
 ---
 
-![center](http://docs.arc42.org/images/10-quality-tree-example.png)
+# Utility tree
 
 ---
 
-How to document architecture? 
-
-* Non-formal notations
-* Semi-formal notations
-* Formal notations
+![](qualityattributes.png)
 
 ---
 
-# Non-formal notations
-
-* Custom notation
-* Requires legend 
-* No formal validation possible
+![original](qa2.png)
 
 ---
 
 
-# Non-formal notations
-
-* Accepted notation
-* Still no formal validation possible
+![fit](qa3.png)
 
 ---
 
-# Formal notations
+# How to document architecture? 
 
-* Strict rules
-* Formal validation
+* Non-formal notations with general purpose diagramming
+* Semi-formal notations with standardized notation
+* Formal notations with precise semantics
+
+---
+
+![fit](https://wiki.smu.edu.sg/is480/img_auth.php/c/c4/Solution_Architecture_Diagram.png)
+
+---
+
+![fit](https://upload.wikimedia.org/wikipedia/commons/b/b8/Policy_Admin_Component_Diagram.PNG)
+
+---
+
+# Documenting the architecture is the third most important activity for an SA.
+
+---
+
+![center](project.png)
+
+---
+
+# Construction
+
+* Bootstrap the development
+* Define and setup quality gates
+* Create PoCs 
+* Share knowledge
+
+---
+
+![center](project.png)
+
+---
+
+# Transition
+
+* To production
+* To other team
 
 ---
 
 # So...
 
-The person who gather requirements, conducts requirement workshops, identifies ASR and build the architecture is called Solution Architect.
+The person who identifies stakeholders, gathers ASRs, builds the architecture, shares it and bootstraps some of the systems components is usually called Solution Architect.
 
 ---
 
@@ -199,3 +257,20 @@ Solution Architect:
 * Good knowledge of architectural theory out of primary technology domain context bounds.
 
 * Ability to identify stakeholders and adopt communication style to particular role (effectively communicate with peer client architects and management). 
+
+---
+
+# Links
+
+* Books is Software Architecture:
+	https://medium.com/@nvashanin/books-in-software-architecture-6ad974e524ce
+* Amazon Cloud Architect Associate:
+	https://www.udemy.com/aws-certified-solutions-architect-associate/
+* Google Cloud Architect Professional:
+	https://www.coursera.org/specializations/gcp-architecture
+
+---
+
+![center](end.png)
+
+

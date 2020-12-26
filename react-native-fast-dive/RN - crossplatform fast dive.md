@@ -7,45 +7,32 @@ build-lists: true
 
 ---
 
-#About me
-
-* Vladimir Ivanov - Lead software engineer
-* More than 6 years in Android development
-* Wide interest in Mobile technologies
-* Happy father of a wonderful son
-
-——-
-
-# Why not crossplatform?
-
-1. Lack of specialists
-2. UX concerns
-3. God damn javascript
+# Mobile Engineers?
 
 ---
 
+# Frontend Engineers?
+
+---
+
+#About me
+
+* Vladimir Ivanov - Lead software engineer
+* More than 7 years in Android development
+* Wide interest in Mobile technologies
+
+——-
+
 # Why crossplatform?
 
-1. Cheap development
+1. Effective development
 2. because rapid
 3. 3x faster than native approach
 4. Native UX, at last
 
 ——-
 
-
-# How is was to dive a year ago?
-
-1. Install node
-2. Install android/ios sdk
-3. For android: install java, download platforms, emulators, build tools
-4. Learn React Native
-5. ???
-6. PROFIT!11
-
-——-
-
-# How it is now?
+# How to dive?
 
 1. Install node
 2. Learn React Native
@@ -60,73 +47,19 @@ Let’s dive
 
 ——-
 
-# Simple start
 
-```sh
-
-$ brew install node
-
-```
-
-——-
-
-# Simple start
-
-```sh
-
-$ brew install node
-$ npm install -g create-react-native-app
-
-```
-
-——-
-
-# Simple start
-
-```sh
-
-$ brew install node
-$ npm install -g create-react-native-app
-$ create-react-native-app github
-
-```
-
-——-
-
-# Simple start
-
-```sh
-
-$ brew install node
-$ npm install -g create-react-native-app
-$ create-react-native-app github
-$ cd github
-
-```
-
-——-
-
-# Simple start
-
-```sh
-
-$ brew install node
-$ npm install -g create-react-native-app
-$ create-react-native-app github
-$ cd github
-$ npm start
-
-
-```
-
-——-
-
-
-# What we get 
+# What have we got 
 
 ```sh
 
 $ ls -l
+
+App.js
+App.test.js
+README.md
+app.json
+node_modules
+package.json
 
 
 ```
@@ -136,7 +69,7 @@ $ ls -l
 
 # What have we got 
 
-```sh
+```sh, [.highlight: 3]
 
 $ ls -l
 
@@ -183,39 +116,44 @@ export default class App extends React.Component {
 
 # App.js
 
-```js
+```js, [.highlight: 1]
 
 import React from 'react';
-
-```
-
-——-
-
-# App.js
-
-
-<sub>`import React from 'react’;`</sub>
-
-```js
-
 import { Text, View } from 'react-native';
 
+export default class App extends React.Component {
+  render() {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <Text>Hello, world!</Text>
+      </View>
+    );
+  }
+}
+
+
 ```
 
 ——-
 
-
 # App.js
 
 
-<sub>`import React from 'react’;`</sub>
-<sub>`import { Text, View } from 'react-native’;`</sub>
+```js, [.highlight: 2]
 
-```js
+import React from 'react';
+import { Text, View } from 'react-native';
 
 export default class App extends React.Component {
-
+  render() {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <Text>Hello, world!</Text>
+      </View>
+    );
+  }
 }
+
 
 ```
 
@@ -225,17 +163,45 @@ export default class App extends React.Component {
 # App.js
 
 
-<sub>`import React from 'react’;`</sub>
-<sub>`import { Text, View } from 'react-native’;`</sub>
+```js, [.highlight: 4]
 
-<sub>`export default class App extends React.Component {`</sub>
+import React from 'react';
+import { Text, View } from 'react-native';
 
-```js
-
-	render() {
-		
-	}
+export default class App extends React.Component {
+  render() {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <Text>Hello, world!</Text>
+      </View>
+    );
+  }
 }
+
+
+```
+
+——-
+
+
+# App.js
+
+```js, [.highlight: 5,11]
+
+import React from 'react';
+import { Text, View } from 'react-native';
+
+export default class App extends React.Component {
+  render() {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <Text>Hello, world!</Text>
+      </View>
+    );
+  }
+}
+
+
 ```
 
 ——-
@@ -244,21 +210,22 @@ export default class App extends React.Component {
 # App.js
 
 
-<sub>`import React from 'react’;`</sub>
-<sub>`import { Text, View } from 'react-native’;`</sub>
+```js, [.highlight: 6-10]
 
-<sub>`export default class App extends React.Component {`</sub>
+import React from 'react';
+import { Text, View } from 'react-native';
 
-```js
-
-	render() {
-		return (
-      		<View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-        		<Text>Hello, world!</Text>
-      		</View>
-    	);
-	}
+export default class App extends React.Component {
+  render() {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <Text>Hello, world!</Text>
+      </View>
+    );
+  }
 }
+
+
 ```
 
 ——-
@@ -279,39 +246,6 @@ export default class App extends React.Component {
     );
   }
 }
-
-```
-
-——-
-
-# App.js
-
-<sub>`<View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>`</sub>
-
-```js
-<View style={styles.container}>
-```
-——-
-
-# App.js
-
-```js
-
-return (
-  <View style={styles.container}>
-     …
-  </View>
-);
-
-…
-
-const styles = {
- container: {
-   flex: 1,
-   justifyContent: 'center',
-   alignItems: 'center'
- }
-};
 
 ```
 
@@ -396,18 +330,16 @@ export default Logo = () => (
 
 # Logo component
 
+```js
+export default Logo = () => (
 
-<sub>`export default Logo = () => (`</sub>
-
-```xml
 	<View style={{alignItems: 'center'}}>
         	<Image
             		source={require('./../../../GitHub-Logo.png')}
         	/>
 	</View>
+)
 ```
-
-<sub>`);`</sub>
 
 ——-
 
@@ -426,13 +358,6 @@ export default Logo = () => (
 
 # Login inputs
 
-```js 
-
-import React from 'react';
-import {View} from ‘react-native’;
-import {FormInput} from 'react-native-elements';
-
-```
 
 ```xml
 
@@ -456,83 +381,6 @@ export default LoginInputs = ({ onChangeValue }) => (
 
 
 ``` 
- 
-——-
-
-
-# Login inputs
-
-```js 
-
-import React from 'react';
-import {View} from ‘react-native’;
-import {FormInput} from 'react-native-elements';
-
-``` 
- 
-——-
-
-
-# Login inputs
-
-```js 
-
-import React from 'react';
-import {View} from ‘react-native’;
-
-
-```
-
-<sub>`import {FormInput} from 'react-native-elements’`</sub>; 
- 
-——-
-
-
-
-# Login inputs
-
-
-
-<sub>`import React from 'react’;`</sub>
-<sub>`import {View} from ‘react-native’;`</sub>
-
-
-```js 
-
-import {FormInput} from 'react-native-elements’;
- 
-```
-
-——-
-
-# Login inputs
-
-```js 
-
-export default LoginInputs = ({ onChangeValue }) => (
-
-```
-```xml
-    <View style={{ margin: 16 }}>
-        <FormInput
-            placeholder='login'
-            onChangeText={(value) => {
-                onChangeValue('login', value);
-            }}
-        />
-        <FormInput
-            secureTextEntry
-            placeholder='password'
-            onChangeText={(value) => {
-                onChangeValue('password', value);
-            }}
-        />
-    </View>
-);
-
-
-``` 
- 
 
 ——-
 
@@ -547,58 +395,24 @@ export default LoginInputs = ({ onChangeValue }) => (
 
 ``` 
 
-
-——-
-
-# Login inputs
-
-<sub>`export default LoginInputs = ({ onChangeValue }) => (`</sub>
-
-```xml 
-
-	<View style={{ margin: 16 }}>
-        <FormInput
-            placeholder='login'
-            onChangeText={(value) => {
-                onChangeValue('login', value);
-            }}
-        />
-        <FormInput
-            secureTextEntry
-            placeholder='password'
-            onChangeText={(value) => {
-                onChangeValue('password', value);
-            }}
-        />
-    </View>);
-
-``` 
-<sub>`);`</sub>
-
 ——-
 
 
 # Login inputs
-
-<sub>`export default LoginInputs = ({ onChangeValue }) => (`</sub>
-
 ```xml 
+
+export default LoginInputs = ({ onChangeValue }) => (
 
 	<View style={{ margin: 16 }}>
         	{ … }
-	</View>);
+	</View>
 
-
+)
 ``` 
 
-<sub>`);`</sub>
-
 ——-
 
 # Login inputs
-
-<sub>`<View style={{ margin: 16 }}>`</sub>
-
 
 ```xml
 
@@ -618,50 +432,40 @@ export default LoginInputs = ({ onChangeValue }) => (
 
 
 ```
-<sub>`</View>);`</sub>
-
 
 ——-
 
 # Login inputs
 
-<sub>`<View style={{ margin: 16 }}>`</sub>
-
-
 ```xml
 
-        <FormInput
-            placeholder='login'
-            onChangeText={(value) => {
-                onChangeValue('login', value);
-            }}
-        />
-        <FormInput />
+   <FormInput
+        placeholder='login'
+        onChangeText={(value) => {
+            onChangeValue('login', value);
+        }}
+   />
+   <FormInput />
 
 
 ```
-<sub>`</View>);`</sub>
-
 
 ——-
 
 # Login inputs
 
-<sub>`<View style={{ margin: 16 }}>`</sub>
 
 ```xml
-		<FormInput />
-        <FormInput
-            secureTextEntry
-            placeholder='password'
-            onChangeText={(value) => {
-                onChangeValue('password', value);
-            }}
-        />
-
+   <FormInput />
+   <FormInput
+       secureTextEntry
+       placeholder='password'
+       onChangeText={(value) => {
+           onChangeValue('password', value);
+       }}
+   />
 
 ```
-<sub>`</View>);`</sub>
 
 ——-
 
@@ -931,124 +735,28 @@ export const loginAsync = async (login, password) => {
 
 ——-
 
-# loginAsync
-
-```js
-export const loginAsync = async (login, password) => {
-    let base64 = encode(`${login}:${password}`);
-    …
-};
-```
-
-——-
-
-# loginAsync
-
-```js
-export const loginAsync = async (login, password) => {
-    let base64 = encode(`${login}:${password}`);
-    try {
-        let result = await fetch('https://api.github.com/user', …);
-        …
-    } catch (error) {
-        …
-    }
-};
-```
-
-
-——-
-
-# loginAsync
-
-```js
-export const loginAsync = async (login, password) => {
-    let base64 = encode(`${login}:${password}`);
-    try {
-        let result = await fetch('https://api.github.com/user', {
-            method: 'GET',
-            headers: {
-                'Accept': 'application/json',
-                'Content-Type': 'application/json',
-                'Authorization': 'Basic ' + base64
-            },
-        });
-        …
-    } catch (error) {
-        …
-    }
-};
-```
-
-
-
-——-
-
-
-# loginAsync
-
-```js
-export const loginAsync = async (login, password) => {
-    let base64 = …
-    try {
-        let result = await fetch('https://api.github.com/user', …);
-        if (result.status === 200) {
-            return {
-                user: JSON.parse(result._bodyInit),
-                auth: base64
-            };
-        } 
-	…
-    } catch (error) {
-        …
-    }
-};
-```
-
-——-
-
-# loginAsync
-
-```js
-export const loginAsync = async (login, password) => {
-    let base64 = …;
-    try {
-        let result = await fetch('https://api.github.com/user', …);
-        if (result.status === 200) {
-            return { … }
-        } else {
-            return { error: `Failed to login with ${result.status}` };
-        }
-    } catch (error) {
-        return { error: `Failed to login with ${error}` };
-    }
-};
-```
-
-——-
-
 
 # LoginScreen.js
 
-```js
+```xml
 
     render() {
         const {container, successMessage, errorMessage} = styles;
 
         return (
-```
-```xml
             <View style={container}>
                 <Logo />
                 <LoginInputs …/>
                 <Button
                     …
                 />
-                {this.state.loggedIn && <Text style={successMessage}>Logged in!</Text>}
-                {this.state.error && <Text style={errorMessage}>{this.state.error}</Text>}
+                {this.state.loggedIn 
+					&& <Text style={successMessage}>Logged in!</Text>
+				}
+                {this.state.error 
+					&& <Text style={errorMessage}>{this.state.error}</Text>
+				}
             </View>
-```
-```js
         )
     }
 
@@ -1059,18 +767,17 @@ export const loginAsync = async (login, password) => {
 
 # doLogin
 
-<sup>`doLogin = async () => {`</sup>
-    <sup>`    const { login, password } = this.state;`</sup>
-    <sup>`    let result = await loginAsync(login, password);`</sup>
-
 ```js
- this.setState({ 
-	loggedIn: result.error === undefined, 
-	error:  result.error 
- });
-```    
+doLogin = async () => {
+    const { login, password } = this.state
+    let result = await loginAsync(login, password)
 
-<sup>`};`</sup>
+ 	this.setState({ 
+		loggedIn: result.error === undefined, 
+		error:  result.error 
+ 	});
+}
+```    
 
 ——-
 
@@ -1081,16 +788,14 @@ export const loginAsync = async (login, password) => {
 
 ——-
 
-# Немного статистики
+# Stats
 
-- 153 строки
-- 1 Час времени разработки
-
-
+- 153 lines
+- 1 hour of development time
 
 ——-
 
-# Полезные ссылки
+# Useful links
 
 - https://facebook.github.io/react-native/docs/getting-started.html
 - https://www.udemy.com/the-complete-react-native-and-redux-course/
@@ -1099,4 +804,12 @@ export const loginAsync = async (login, password) => {
 
 ——-
 
-# Вопросы?
+* https://github.com/vlivanov/react-native-fast-dive :computer:
+* https://twitter.com/vvsevolodovich :bird:
+* https://medium.com/@dzigorium :pencil:
+* https://www.epam.com
+* https://mobiusconf.com
+
+——-
+
+# Questions?

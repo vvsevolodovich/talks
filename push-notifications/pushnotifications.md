@@ -8,14 +8,6 @@ build-lists: true
 
 ---
 
-# About me
-
-* Vladimir Ivanov - Lead Software Engineer
-* Primary Skill: Android
-* React Native Experience > 1 year
-
----
-
 # What are notifications?
 
 
@@ -393,14 +385,9 @@ public fun removeNotification(id : kotlin.Int) {
 
 ```
 
-
 ---
 
 # Providing reaction to a notification
-
----
-
-![fit](https://qph.ec.quoracdn.net/main-qimg-5bf2e459279d04a83a4d9ce6856946b0-c)
 
 ---
 
@@ -866,6 +853,7 @@ RNLocalNotifications. deleteNotification(1);
 * Configure backend
 * Add support in the mobile application
 * Implement the push handling
+* Or use paid 3rd party services(like Amazon SNS, Urban Airship, etc.)
 
 ---
 

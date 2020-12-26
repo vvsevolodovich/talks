@@ -1,0 +1,1689 @@
+slidenumbers: true
+autoscale: true
+build-lists: true
+
+
+## Forget RxJava: Kotlin Coroutines are all you need
+
+---
+
+![fit](https://cdn-images-1.medium.com/max/1600/1*5fMUcesPulhKriVb48oF_A.png)
+
+---
+
+# Disclaimer
+
+Everything said hereby is a product of production and research experience. Mistakes are possible, please check everything you see here.
+
+---
+
+# whoami
+
+* Vladimir Ivanov (EPAM Systems)
+* Android apps: > 15 published, > 7 years
+* Doing some Solution Architecture from time to time.
+* Certified Google Cloud Architect.
+
+---
+
+# whoami
+
+* Vladimir Ivanov (EPAM Systems)
+* Android apps: > 15 published, > 7 years
+* Doing some Solution Architecture from time to time.
+* Certified Google Cloud Architect.
+
+
+![fit right](gcp.png)
+
+---
+
+
+
+# .NET? 
+
+---
+
+# JS? 
+
+
+---
+
+![fit](whynot.gif)
+
+---
+
+# Async/await
+
+---
+
+```js
+export const loginAsync = async (login, password) => {
+    let auth = `Basic ${base64(login:password)}`
+    try {
+        let result = await fetch('https://api.github.com/user', auth)
+        if (result.status === 200) {
+            return { result.body }
+        } else {
+            return { error: `Failed to login with ${result.status}` }
+        }
+    } catch (error) {
+        return { error: `Failed to login with ${error}` }
+    }
+}
+
+```
+---
+
+* Easy to read?
+* Indeed!
+
+---
+
+# Kotlin can do the same!
+
+---
+
+# What do we do now?
+
+---
+
+# Github login application
+
+* Authorize with login/password
+* Get repo list for the user
+* Search among the GitHub open repos
+
+---
+
+![inline](loginform.png)
+
+---
+
+![inline](repos.png)
+
+---
+
+![inline](poll.png)
+
+---
+
+
+# RxJava 2 implementation
+
+```kotlin
+
+interface ApiClientRx {
+
+	fun login(auth: Authorization) 
+		: Single<GithubUser>
+	fun getRepositories
+		(reposUrl: String, auth: Authorization) 
+		: Single<List<GithubRepository>>
+
+}
+
+```
+
+---
+
+# RxJava 2 implementation
+
+```kotlin, [.highlight: 4, 7]
+
+interface ApiClientRx {
+
+	fun login(auth: Authorization) 
+		: Single<GithubUser>
+	fun getRepositories
+		(reposUrl: String, auth: Authorization) 
+		: Single<List<GithubRepository>>
+
+}
+
+```
+
+---
+
+# RxJava 2 implementation
+
+```kotlin, [.highlight: 3-12] 
+
+	override fun login(auth: Authorization) 
+		: Single<GithubUser?> = Single.fromCallable {
+		val response = get("https://api.github.com/user", auth = auth)
+		if (response.statusCode != 200) {
+			throw RuntimeException("Incorrect login or password")
+		}
+
+		val jsonObject = response.jsonObject
+		with(jsonObject) {
+			return@with GithubUser(getString("login"), getInt("id"),
+					getString("repos_url"), getString("name"))
+		}
+	}
+```
+---
+
+# RxJava 2 implementation
+
+```kotlin, [.highlight: 1-2, 13] 
+
+	override fun login(auth: Authorization) 
+		: Single<GithubUser?> = Single.fromCallable {
+		val response = get("https://api.github.com/user", auth = auth)
+		if (response.statusCode != 200) {
+			throw RuntimeException("Incorrect login or password")
+		}
+
+		val jsonObject = response.jsonObject
+		with(jsonObject) {
+			return@with GithubUser(getString("login"), getInt("id"),
+					getString("repos_url"), getString("name"))
+		}
+	}
+```
+---
+
+# RxJava 2 implementation
+
+```kotlin
+
+	override fun getRepositories
+		(repoUrl: String, authorization: Authorization)
+		: Single<List<GithubRepository>> {
+
+		return Single.fromCallable({
+				toRepos(get(repoUrl, auth = authorization).jsonArray)
+		})
+	}
+```
+---
+
+```kotlin
+private fun attemptLoginRx() {
+	showProgress(true)
+	apiClient.login(auth)
+			.flatMap { 
+				user -> apiClient.getRepositories(user.repos_url, auth) 
+			}
+			.map { 
+				list -> list.map { it.full_name } 
+			}
+			.subscribeOn(Schedulers.io())
+			.observeOn(AndroidSchedulers.mainThread())
+			.doFinally { showProgress(false) }
+			.subscribe(
+					{ list -> showRepositories(this, list)    },
+					{ error -> Log.e("TAG", "Failed to show repos", error) }
+			)
+}
+
+```
+
+---
+
+```kotlin, [.highlight: 3-6]
+
+private fun attemptLoginRx() {
+	showProgress(true)
+	apiClient.login(auth)
+			.flatMap { 
+				user -> apiClient.getRepositories(user.repos_url, auth) 
+			}
+			.map { 
+				list -> list.map { it.full_name } 
+			}
+			.subscribeOn(Schedulers.io())
+			.observeOn(AndroidSchedulers.mainThread())
+			.doFinally { showProgress(false) }
+			.subscribe(
+					{ list -> showRepositories(this, list)    },
+					{ error -> Log.e("TAG", "Failed to show repos", error) }
+			)
+
+}
+
+```
+
+---
+
+
+```kotlin, [.highlight: 7-9]
+
+private fun attemptLoginRx() {
+	showProgress(true)
+	apiClient.login(auth)
+			.flatMap { 
+				user -> apiClient.getRepositories(user.repos_url, auth) 
+			}
+			.map { 
+				list -> list.map { it.full_name } 
+			}
+			.subscribeOn(Schedulers.io())
+			.observeOn(AndroidSchedulers.mainThread())
+			.doFinally { showProgress(false) }
+			.subscribe(
+					{ list -> showRepositories(this, list)    },
+					{ error -> Log.e("TAG", "Failed to show repos", error) }
+			)
+
+}
+```
+
+---
+
+```kotlin, [.highlight: 10-19]
+
+private fun attemptLoginRx() {
+	showProgress(true)
+	apiClient.login(auth)
+			.flatMap { 
+				user -> apiClient.getRepositories(user.repos_url, auth) 
+			}
+			.map { 
+				list -> list.map { it.full_name } 
+			}
+			.subscribeOn(Schedulers.io())
+			.observeOn(AndroidSchedulers.mainThread())
+			.doFinally { showProgress(false) }
+			.subscribe(
+					{ list -> showRepositories(this, list)    },
+					{ error -> Log.e("TAG", "Failed to show repos", error) }
+			)
+}
+
+```
+
+---
+
+# Any caveats?
+
+---
+
+# Any caveats?
+
+* Big amount of objects under the hood
+* Unrelated stacktrace
+* Steepy learning curve
+
+---
+
+![fit](rxjava-allocations.png)
+
+---
+
+```kotlin
+
+// new SingleFlatMap()
+val flatMap = apiClient.login(auth)
+		.flatMap { apiClient.getRepositories(it.repos_url, auth) }
+// new SingleMap
+val map = flatMap
+		.map { list -> list.map { it.full_name } }
+// new SingleSubscribeOn
+val subscribeOn = map
+		.subscribeOn(Schedulers.io())
+// new SingleObserveOn
+val observeOn = subscribeOn
+		.observeOn(AndroidSchedulers.mainThread())
+// new SingleDoFinally
+val doFinally = observeOn
+		.doFinally { showProgress(false) }
+// new ConsumerSingleObserver
+val subscribe = doFinally
+		.subscribe(
+				{ list -> showRepositories(this, list) },
+				{ error -> Log.e("TAG", "Failed to show repos", error) }
+		)
+	}
+
+```
+
+---
+
+```kotlin
+   
+at com.epam.talks.github.model.ApiClientRx$ApiClientRxImpl$login$1.call(ApiClientRx.kt:16)
+   at io.reactivex.internal.operators.single.SingleFromCallable.subscribeActual(SingleFromCallable.java:44)
+   at io.reactivex.Single.subscribe(Single.java:3096)
+   at io.reactivex.internal.operators.single.SingleFlatMap.subscribeActual(SingleFlatMap.java:36)
+   at io.reactivex.Single.subscribe(Single.java:3096)
+   at io.reactivex.internal.operators.single.SingleMap.subscribeActual(SingleMap.java:34)
+   at io.reactivex.Single.subscribe(Single.java:3096)
+   at io.reactivex.internal.operators.single.SingleSubscribeOn$SubscribeOnObserver.run(SingleSubscribeOn.java:89)
+   at io.reactivex.Scheduler$DisposeTask.run(Scheduler.java:463)
+   at io.reactivex.internal.schedulers.ScheduledRunnable.run(ScheduledRunnable.java:66)
+   at io.reactivex.internal.schedulers.ScheduledRunnable.call(ScheduledRunnable.java:57)
+   at java.util.concurrent.FutureTask.run(FutureTask.java:266)
+   at java.util.concurrent.ScheduledThreadPoolExecutor$ScheduledFutureTask.run(ScheduledThreadPoolExecutor.java:301)
+   at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1162)
+   at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:636)
+   at java.lang.Thread.run(Thread.java:764)
+	
+```
+
+---
+
+
+![fit](https://www.youtube.com/watch?v=aCL-rxnjS6o)
+
+---
+
+![fit](https://i.imgflip.com/2qdotc.jpg)
+
+---
+
+# Kotlin Coroutines
+
+* available from kotlin 1.1
+* Stable from Kotlin 1.3
+
+---
+
+# Coroutine implementation
+
+```kotlin
+
+interface ApiClient {
+
+	fun login(auth: Authorization) 
+		: Deferred<GithubUser>
+	fun getRepositories
+		(reposUrl: String, auth: Authorization) 
+		: Deferred<List<GithubRepository>>
+
+}
+
+```
+
+
+---
+
+# Coroutine implementation
+
+```kotlin, [.highlight: 4,7]
+
+interface ApiClient {
+
+	fun login(auth: Authorization) 
+		: Deferred<GithubUser>
+	fun getRepositories
+		(reposUrl: String, auth: Authorization) 
+		: Deferred<List<GithubRepository>>
+
+}
+
+```
+---
+
+```kotlin
+
+private fun attemptLogin() {
+	launch(Main) {
+		val auth = BasicAuthorization(login, pass)
+		try {
+			showProgress(true)
+			val userInfo = apiClient.login(auth).await()
+			val repoUrl = userInfo.repos_url
+			val list = apiClient.getRepositories(repoUrl, auth).await()
+			showRepositories(
+				this, 
+				list.map { it -> it.full_name }
+			)
+		} catch (e: RuntimeException) {
+			showToast("Oops!")
+		} finally {
+			showProgress(false)
+		}
+	}
+}
+
+
+```
+---
+
+```kotlin, [.highlight: 2, 6, 8]
+
+private fun attemptLogin() {
+	launch(Main) {
+		val auth = BasicAuthorization(login, pass)
+		try {
+			showProgress(true)
+			val userInfo = apiClient.login(auth).await()
+			val repoUrl = userInfo.repos_url
+			val list = apiClient.getRepositories(repoUrl, auth).await()
+			showRepositories(
+				this, 
+				list.map { it -> it.full_name }
+			)
+		} catch (e: RuntimeException) {
+			showToast("Oops!")
+		} finally {
+			showProgress(false)
+		}
+	}
+}
+
+```
+---
+
+# Advantages
+
+* Easy to read
+* Async as written as if it was sync
+* Error handling sync style(try-catch-finally)
+
+---
+
+# RxJava disadvantages?
+
+
+---
+
+![fit](kotlinx-allocations.png)
+
+---
+
+# 19 -> 11
+
+---
+
+# Stacktrace?
+
+---
+
+```kotlin
+
+at com.epam.talks.github.model.ApiClient$ApiClientImpl$login$1.doResume(ApiClient.kt:27)
+   at kotlin.coroutines.experimental.jvm.internal.CoroutineImpl.resume(CoroutineImpl.kt:54)
+   at kotlinx.coroutines.experimental.DispatchedTask$DefaultImpls.run(Dispatched.kt:161)
+   at kotlinx.coroutines.experimental.DispatchedContinuation.run(Dispatched.kt:25)
+   at java.util.concurrent.ForkJoinTask$RunnableExecuteAction.exec(ForkJoinTask.java:1412)
+   at java.util.concurrent.ForkJoinTask.doExec(ForkJoinTask.java:285)
+   at java.util.concurrent.ForkJoinPool$WorkQueue.runTask(ForkJoinPool.java:1152)
+   at java.util.concurrent.ForkJoinPool.scan(ForkJoinPool.java:1990)
+   at java.util.concurrent.ForkJoinPool.runWorker(ForkJoinPool.java:1938)
+   at java.util.concurrent.ForkJoinWorkerThread.run(ForkJoinWorkerThread.java:157)
+
+```
+
+---
+
+# However...
+
+Debug enables capturing the coroutine original launch place into the stack trace[^1]
+
+
+[^1]: https://github.com/Kotlin/kotlinx.coroutines/blob/master/core/kotlinx-coroutines-debug/README.md 
+
+---
+
+![center](stacktrace.jpeg)
+
+---
+
+# Direct style
+
+```kotlin, [.highlight: 5, 11, 9, 13]
+
+private fun attemptLogin() {
+	launch {
+		val auth = BasicAuthorization(login, pass)
+		try {
+			showProgress(true)
+			val userInfo = login(auth).await()
+			val repoUrl = userInfo!!.repos_url
+			val list = getRepositories(repoUrl, auth).await()
+			showRepositories(this, list.map { it -> it.full_name })
+		} catch (e: RuntimeException) {
+			showToast("Oops!")
+		} finally {
+			showProgress(false)
+		}
+	}
+}
+
+
+```
+
+---
+
+## Error handling
+
+```kotlin, [.highlight: 4,10-14]
+
+private fun attemptLogin() {
+	launch {
+		val auth = BasicAuthorization(login, pass)
+		try {
+			showProgress(true)
+			val userInfo = login(auth).await()
+			val repoUrl = userInfo!!.repos_url
+			val list = getRepositories(repoUrl, auth).await()
+			showRepositories(this, list.map { it -> it.full_name })
+		} catch (e: RuntimeException) {
+			showToast("Oops!")
+		} finally {
+			showProgress(false)
+		}
+	}
+}
+
+
+```
+---
+
+## stdlib usage
+
+```kotlin, [.highlight: 5,7,8-10]
+launch {
+	showProgress(true)
+	val auth = BasicAuthorization(login, pass)
+	try {
+		val userInfo = apiClient.login(auth).await()
+		val repoUrl = userInfo!!.repos_url
+		val repos = apiClient.getRepositories(repoUrl, auth).await()
+		repeat(list.size, {
+			apiClient.getRepoFollowers().await()
+		})
+		showRepositories(this, repos!!.map { it -> it.full_name })
+	} catch (e: RuntimeException) {
+		showToast("Oops!")
+	} finally {
+		showProgress(false)
+	}
+}
+
+```
+---
+
+# Async function implementation
+
+```kotlin
+override fun login(auth: Authorization) : Deferred<GithubUser?> = async {
+	val response = get("https://api.github.com/user", auth = auth)
+	if (response.statusCode != 200) {
+		throw RuntimeException("Incorrect login or password")
+	}
+
+	val jsonObject = response.jsonObject
+	with (jsonObject) {
+		return@async GithubUser(getString("login"), getInt("id"),
+				getString("repos_url"), getString("name"))
+	}
+}
+```
+---
+
+# Async function implementation
+
+```kotlin, [.highlight: 2-11]
+override fun login(auth: Authorization) : Deferred<GithubUser?> = async {
+	val response = get("https://api.github.com/user", auth = auth)
+	if (response.statusCode != 200) {
+		throw RuntimeException("Incorrect login or password")
+	}
+
+	val jsonObject = response.jsonObject
+	with (jsonObject) {
+		return@async GithubUser(getString("login"), getInt("id"),
+				getString("repos_url"), getString("name"))
+	}
+}
+```
+---
+
+# async usage
+
+```kotlin
+fun login(...) : Deferred<GithubUser?> = async {
+		
+
+        return@async GithubUser(…)
+}
+
+```
+
+---
+
+# However...
+
+With structured concurrency you need your class to have coroutineContext to be a property of your class. We will get back to it a little bit later.
+
+
+---
+
+# What's async?
+
+---
+
+# Coroutine builder
+
+
+* launch
+* async
+* runBlocking
+* withContext
+
+---
+
+# launch returns Job
+
+```kotlin 
+
+interface Job : CoroutineContext.Element {
+
+	public val isActive: Boolean
+    public val isCompleted: Boolean
+    public val isCancelled: Boolean
+    public fun getCancellationException(): CancellationException
+    public fun start(): Boolean
+    public fun cancel(): Unit
+}
+
+```
+---
+
+# async returns Deferred<T>
+
+```kotlin
+
+public actual interface Deferred<out T> : Job {
+
+	public suspend fun await(): T
+}
+
+```
+
+---
+
+# Deferred is Future
+
+
+---
+
+![fit](http://cdn-static.denofgeek.com/sites/denofgeek/files/styles/main_wide/public/images/289661.jpg?itok=kUIUdiME)
+
+---
+
+
+# Deferred is Future
+
+* non-blocking
+* cancellable
+
+---
+
+## await is an extension function
+
+---
+
+## await is an extension function
+
+* like Future.get(), but non-blocking
+
+---
+
+# Suspension
+
+---
+
+![fit](https://d2p6rcax2lcn4u.cloudfront.net/wp-content/uploads/2017/04/passive-car-suspension.jpg)
+
+---
+
+![fit](https://cdn-images-1.medium.com/max/1600/1*t28Sfv0JdKBTNAa0ekI3Pw.png)
+
+---
+
+![fit](https://cdn-images-1.medium.com/max/1600/1*Ogq6yFxXawg7-lvMKIcn5g.png)
+
+
+---
+
+# Suspending
+
+* means resumable pause of execution
+* available in the proper places
+* marked with ```suspend``` modifier
+
+---
+
+# Where is our suspend?
+
+---
+
+```kotlin
+
+public expect fun <T> async(
+    context: CoroutineContext = DefaultDispatcher,
+    start: CoroutineStart = CoroutineStart.DEFAULT,
+    parent: Job? = null,
+    block: suspend CoroutineScope.() -> T
+): Deferred<T>
+
+
+```
+---
+
+```kotlin, [.highlight: 5]
+
+public expect fun <T> async(
+    context: CoroutineContext = DefaultDispatcher,
+    start: CoroutineStart = CoroutineStart.DEFAULT,
+    parent: Job? = null,
+    block: suspend CoroutineScope.() -> T
+): Deferred<T>
+
+
+```
+---
+
+# Cancellation
+
+---
+
+## Cancellation should be cooperate
+
+---
+
+# RxJava 2
+
+---
+ 
+### Cancellation in RxJava is fine, but may require current subscription
+
+---
+
+## Cancellation in coroutines is cool!
+
+---
+
+# Structured concurrency
+
+```kotlin
+
+class Presenter : CoroutineScope { 
+
+  val coroutineContext = Dispatchers.Main
+
+}
+
+``` 
+
+---
+
+# Structured concurrency
+
+
+```kotlin
+class Presenter : CoroutineScope { 
+
+  val job = Job() 
+
+  val coroutineContext = Dispatchers.Main + Job
+
+} 
+```
+---
+
+## How to check if cancelled?
+
+---
+
+```kotlin
+launch {
+	showProgress(true)
+	…
+	try {
+		val userInfo = apiClient.login(auth).await()
+		if (!isActive) {
+			return@launch
+		}
+	…
+}
+```
+---
+
+```kotlin, [.highlight: 6-9]
+launch {
+	showProgress(true)
+	…
+	try {
+		val userInfo = apiClient.login(auth).await()
+		if (!isActive) {
+			return@launch
+		}
+	…
+}
+```
+
+---
+
+# Writing tests
+
+---
+
+
+```kotlin
+
+	@Test
+	fun login() {
+		val apiClientImpl = ApiClientRx.ApiClientRxImpl()
+		val genericResponse = mockLoginResponse()
+
+		staticMockk("khttp.KHttp").use {
+			every { get("https://api.github.com/user", auth = any()) } 
+				returns genericResponse
+
+			val githubUser =
+					apiClientImpl
+							.login(BasicAuthorization("login", "pass"))
+
+			githubUser.subscribe({ githubUser ->
+				assertNotNull(githubUser)
+				assertEquals("name", githubUser.name)
+				assertEquals("url", githubUser.repos_url)
+			})
+
+		}
+	}
+```
+---
+
+
+```kotlin
+
+	@Test
+	fun login() {
+		…
+
+			val githubUser =
+					apiClientImpl
+							.login(BasicAuthorization("login", "pass"))
+
+			githubUser.subscribe({ githubUser ->
+				assertNotNull(githubUser)
+				assertEquals("name", githubUser.name)
+				assertEquals("url", githubUser.repos_url)
+			})
+
+		…
+	}
+```
+
+---
+
+
+```kotlin
+@Test
+fun login() {
+	val apiClientImpl = ApiClient.ApiClientImpl()
+	val genericResponse = mockLoginResponse()
+
+	staticMockk("khttp.KHttp").use {
+		every { get("https://api.github.com/user", auth = any()) } 
+			returns genericResponse
+
+		runBlocking {
+			val githubUser =
+					apiClientImpl
+						.login(BasicAuthorization("login", "pass"))
+						.await()
+
+			assertNotNull(githubUser)
+			assertEquals("name", githubUser.name)
+			assertEquals("url", githubUser.repos_url)
+		}
+	}
+}
+```
+---
+
+```kotlin, [.highlight: 4,12]
+@Test
+fun login() {
+…
+	runBlocking {
+		val githubUser =
+			apiClientImpl
+				.login(BasicAuthorization("login", "pass"))
+				.await()
+
+		
+		assertEquals("name", githubUser.name)
+	}
+}
+	
+```
+---
+
+```kotlin, [.highlight: 4,12, 6-8]
+@Test
+fun login() {
+…
+	runBlocking {
+		val githubUser =
+			apiClientImpl
+				.login(BasicAuthorization("login", "pass"))
+				.await()
+
+		
+		assertEquals("name", githubUser.name)
+	}
+}
+	
+```
+
+---
+
+## Tests look the same
+
+---
+
+## Can we do better?
+
+
+---
+
+``` kotlin
+interface SuspendingApiClient {
+
+
+	suspend fun login(auth: Authorization) 
+		: GithubUser
+
+	suspend fun getRepositories(reposUrl: String, auth: Authorization) 
+		: List<GithubRepository>
+
+	suspend fun searchRepositories(searchQuery: String) 
+		: List<GithubRepository>
+
+
+}
+```
+
+---
+
+``` kotlin
+class SuspendingApiClientImpl : SuspendingApiClient {
+
+	override suspend fun searchRepositories(query: String) 
+			: List<GithubRepository> =
+
+			get("https://api.github.com/search/repositories?q=${query}")
+			.jsonObject
+			.getJSONArray("items")
+			.toRepos()
+}
+```
+---
+
+``` kotlin, [.highlight: 7, 9]
+private fun attemptLoginSuspending() {
+	val apiClient = SuspendingApiClient.SuspendingApiClientImpl()
+	launch {
+		showProgress(true)
+		val auth = BasicAuthorization(login, pass)
+		try {
+			val userInfo = async { apiClient.login(auth) }.await()
+			val repoUrl = userInfo!!.repos_url
+			val list = async { apiClient.getRepositories(repoUrl, auth) }.await()
+			showRepositories(this, list!!.map { it -> it.full_name })
+		} catch (e: RuntimeException) {
+			showToast("Oops!")
+		} finally {
+			showProgress(false)
+		}
+	}
+}
+```
+
+---
+
+```kotlin
+@Test
+fun login() = runBlocking {
+	val apiClientImpl = SuspendingApiClient.SuspendingApiClientImpl()
+	val genericResponse = mockLoginResponse()
+
+	staticMockk("khttp.KHttp").use {
+		every { get("https://api.github.com/user", auth = any()) } 
+			returns genericResponse
+
+		val githubUser =
+				apiClientImpl
+					.login(BasicAuthorization("login", "pass"))
+
+		assertNotNull(githubUser)
+		assertEquals("name", githubUser.name)
+		assertEquals("url", githubUser.repos_url)
+	}
+}
+```
+
+---
+
+```kotlin, [.highlight: 2, 10-16]
+@Test
+fun login() = runBlocking {
+	val apiClientImpl = SuspendingApiClient.SuspendingApiClientImpl()
+	val genericResponse = mockLoginResponse()
+
+	staticMockk("khttp.KHttp").use {
+		every { get("https://api.github.com/user", auth = any()) } 
+			returns genericResponse
+
+		val githubUser =
+				apiClientImpl
+					.login(BasicAuthorization("login", "pass"))
+
+		assertNotNull(githubUser)
+		assertEquals("name", githubUser.name)
+		assertEquals("url", githubUser.repos_url)
+	}
+}
+```
+---
+
+```kotlin
+
+@Test
+fun testLogin() = runBlocking {
+	val apiClient = mockk<SuspendingApiClient.SuspendingApiClientImpl>()
+	val githubUser = GithubUser("login", 1, "url", "name")
+	val repositories = GithubRepository(1, "repos_name", "full_repos_name")
+
+	coEvery { apiClient.login(any()) } 
+		returns githubUser
+	coEvery { apiClient.getRepositories(any(), any()) } 
+		returns Arrays.asList(repositories)
+
+	val loginPresenterImpl = SuspendingLoginPresenterImpl(apiClient)
+	runBlocking {
+		val repos = loginPresenterImpl.doLogin("login", "password")
+		assertNotNull(repos)
+	}
+}
+
+```
+---
+
+```kotlin, [.highlight: 7-10]
+
+@Test
+fun testLogin() = runBlocking {
+	val apiClient = mockk<SuspendingApiClient.SuspendingApiClientImpl>()
+	val githubUser = GithubUser("login", 1, "url", "name")
+	val repositories = GithubRepository(1, "repos_name", "full_repos_name")
+
+	coEvery { apiClient.login(any()) } 
+		returns githubUser
+	coEvery { apiClient.getRepositories(any(), any()) } 
+		returns Arrays.asList(repositories)
+
+	val loginPresenterImpl = SuspendingLoginPresenterImpl(apiClient, CommonPool)
+	runBlocking {
+		val repos = loginPresenterImpl.doLogin("login", "password")
+		assertNotNull(repos)
+	}
+}
+
+```
+
+---
+
+```kotlin, [.highlight: 7-16]
+
+@Test
+fun testLogin() = runBlocking {
+	val apiClient = mockk<SuspendingApiClient.SuspendingApiClientImpl>()
+	val githubUser = GithubUser("login", 1, "url", "name")
+	val repositories = GithubRepository(1, "repos_name", "full_repos_name")
+
+	coEvery { apiClient.login(any()) } 
+		returns githubUser
+	coEvery { apiClient.getRepositories(any(), any()) } 
+		returns Arrays.asList(repositories)
+
+	val loginPresenterImpl = SuspendingLoginPresenterImpl(apiClient, CommonPool)
+	runBlocking {
+		val repos = loginPresenterImpl.doLogin("login", "password")
+		assertNotNull(repos)
+	}
+}
+
+```
+---
+
+# Mockk
+
+```kotlin
+
+coEvery { 
+	apiClient.login(any()) 
+} returns githubUser
+
+```
+
+---
+
+# Mockito-kotlin
+```kotlin
+
+given { 
+	runBlocking { 
+		apiClient.login(any()) 
+	} 
+}.willReturn (githubUser)
+
+```
+---
+
+
+# First take-aways
+
+* There is debug tooling for capture actual stacktraces 
+* Less objects created under the hood
+* Easier to write
+* Cleaner interfaces and tests
+
+---
+
+## Couple of deep dives
+
+---
+
+![fit](http://tsudoi.me/wp-content/uploads/system-failure-the-matrix-hd-wallpaper-hd.jpg)
+
+---
+
+# In production
+
+* Different errors on different layers
+* Complex error handling
+
+---
+
+# What to do? 
+
+* CoroutineExceptionHandler
+* Result classes
+
+---
+
+## Coroutine Exception Handler
+
+---
+
+# Handler example
+
+```kotlin, [.highlight: 1-3]
+val handler = CoroutineExceptionHandler(handler = { , error ->
+	hideProgressDialog()
+	val defaultErrorMsg = "Something went wrong"
+	val errorMsg = when (error) {
+		is ConnectionException -> 
+			userFriendlyErrorMessage(error, defaultErrorMsg)
+		is HttpResponseException -> 
+			userFriendlyErrorMessage(Endpoint.EndpointType.ENDPOINT_SYNCPLICITY, error)
+		is EncodingException -> 
+			"Failed to decode data, please try again"
+		else -> defaultErrorMsg
+	}
+	Toast.makeText(context, errorMsg, Toast.LENGTH_SHORT).show()
+})
+
+```
+
+---
+
+# Handler example
+
+```kotlin, [.highlight: 4-12]
+val handler = CoroutineExceptionHandler(handler = { , error ->
+	hideProgressDialog()
+	val defaultErrorMsg = "Something went wrong"
+	val errorMsg = when (error) {
+		is ConnectionException -> 
+			userFriendlyErrorMessage(error, defaultErrorMsg)
+		is HttpResponseException -> 
+			userFriendlyErrorMessage(Endpoint.EndpointType.ENDPOINT_SYNCPLICITY, error)
+		is EncodingException -> 
+			"Failed to decode data, please try again"
+		else -> defaultErrorMsg
+	}
+	Toast.makeText(context, errorMsg, Toast.LENGTH_SHORT).show()
+})
+
+```
+
+---
+
+# Handler example
+
+```kotlin, [.highlight: 13]
+val handler = CoroutineExceptionHandler(handler = { , error ->
+	hideProgressDialog()
+	val defaultErrorMsg = "Something went wrong"
+	val errorMsg = when (error) {
+		is ConnectionException -> 
+			userFriendlyErrorMessage(error, defaultErrorMsg)
+		is HttpResponseException -> 
+			userFriendlyErrorMessage(Endpoint.EndpointType.ENDPOINT_SYNCPLICITY, error)
+		is EncodingException -> 
+			"Failed to decode data, please try again"
+		else -> defaultErrorMsg
+	}
+	Toast.makeText(context, errorMsg, Toast.LENGTH_SHORT).show()
+})
+
+```
+
+---
+
+
+# Usage
+
+```kotlin
+
+launch(uiDispatcher + handler) {
+	...
+}
+
+```
+
+---
+
+# Result approach
+
+```kotlin
+
+sealed class Result {
+
+	data class Success(val payload: String) 
+		: Result()
+	
+	data class Error(val exception: Exception)
+		: Result()
+}
+
+```
+
+---
+
+# Result usage
+
+```kotlin
+
+override suspend fun doTask(): Result = withContext(IO) {
+	if ( !isSessionValidForTask() ) {
+		return@withContext Result.Error(Exception())
+	}
+		...
+
+	try {
+		Result.Success(restApi.call())
+	} catch (e: Exception) {
+		Result.Error(e)
+	}
+}
+
+```
+---
+
+![fit](https://media.giphy.com/media/l0mWE9z2m3s5i/giphy.gif)
+
+---
+
+## Why RxJava?
+
+---
+
+![fit](search.png)
+
+
+---
+
+# Searching with RxJava 2
+
+```kotlin
+
+publishSubject
+	.debounce(300, TimeUnit.MILLISECONDS)
+	.distinctUntilChanged()
+	.switchMap { 
+		searchQuery -> apiClientRxImpl.searchRepositories(searchQuery) 
+	}
+	.subscribeOn(Schedulers.io())
+	.observeOn(AndroidSchedulers.mainThread())
+	.subscribe({
+		repos.adapter = ReposAdapter(it.map { it.full_name }, this)
+	})
+
+```
+---
+
+```kotlin, [.highlight: 5]
+
+publishSubject
+	.debounce(300, TimeUnit.MILLISECONDS)
+	.distinctUntilChanged()
+	.switchMap { 
+		searchQuery -> apiClientRxImpl.searchRepositories(searchQuery) 
+	}
+	.subscribeOn(Schedulers.io())
+	.observeOn(AndroidSchedulers.mainThread())
+	.subscribe({
+		repos.adapter = ReposAdapter(it.map { it.full_name }, this)
+	})
+
+```
+---
+
+```kotlin, [.highlight: 9-13]
+
+publishSubject
+	.debounce(300, TimeUnit.MILLISECONDS)
+	.distinctUntilChanged()
+	.switchMap { 
+		searchQuery -> apiClientRxImpl.searchRepositories(searchQuery) 
+	}
+	.subscribeOn(Schedulers.io())
+	.observeOn(AndroidSchedulers.mainThread())
+	.subscribe({
+		repos.adapter = ReposAdapter(it.map { it.full_name }, this)
+	})
+
+```
+---
+
+# What's good about it?
+
+---
+
+
+```kotlin, [.highlight: 2-4]
+
+publishSubject
+	.debounce(300, TimeUnit.MILLISECONDS)
+	.distinctUntilChanged()
+	.switchMap { 
+		searchQuery -> apiClientRxImpl.searchRepositories(searchQuery) 
+	}
+	.subscribeOn(Schedulers.io())
+	.observeOn(AndroidSchedulers.mainThread())
+	.subscribe({
+		repos.adapter = ReposAdapter(
+			it.map { it.full_name },
+			this@RepositoriesActivity)
+	})
+
+```
+
+---
+
+# Coroutines have channels! 
+
+---
+
+```kotlin
+
+launch {
+	broadcast.consumeEach {
+		delay(300)
+		val foundRepositories = 
+				apiClient.searchRepositories(it).await()
+		repos.adapter = ReposAdapter(
+							foundRepositories.map { it.full_name },
+							this@RepositoriesActivity
+		)
+	}
+}
+
+```
+---
+
+```kotlin, [.highlight: 4,5]
+
+launch {
+	broadcast.consumeEach {
+		delay(300)
+		val foundRepositories = 
+				apiClient.searchRepositories(it).await()
+		repos.adapter = ReposAdapter(
+							foundRepositories.map { it.full_name },
+							this@RepositoriesActivity
+		)
+	}
+}
+
+```
+---
+
+
+```kotlin, [.highlight: 6-9]
+
+launch {
+	broadcast.consumeEach {
+		delay(300)
+		val foundRepositories = 
+				apiClient.searchRepositories(it).await()
+		repos.adapter = ReposAdapter(
+							foundRepositories.map { it.full_name },
+							this@RepositoriesActivity
+		)
+	}
+}
+
+```
+
+---
+
+```kotlin
+
+val broadcast = ConflatedBroadcastChannel<String>()
+
+
+```
+---
+
+```kotlin
+
+val broadcast = ConflatedBroadcastChannel<String>()
+
+searchQuery.addTextChangedListener(object: TextWatcher {
+
+	override fun afterTextChanged(text: Editable?) {
+			broadcast.offer(text.toString())
+		}
+	})
+}
+
+```
+
+---
+
+* What are channels?
+* What is BroadcastChannel?
+* What is conflated ?
+
+---
+
+# What are channels?
+
+---
+
+![fit](https://media.giphy.com/media/smzfl3E7a4iHK/giphy.gif)
+
+---
+
+## Channel is like blocking queue
+
+---
+
+## but not really
+
+---
+
+| BlockingQueue | Channel |
+| --- | --- |
+| put | send | 
+| take | receive | 
+
+---
+
+```kotlin
+
+public suspend fun send(element: E)
+
+public suspend fun receive(): E
+
+```
+
+---
+
+## BroadcastChannel?
+
+---
+
+## BroadcastChannel - Subject
+
+---
+
+## but not really
+
+---
+
+| Subject | BroadcastChannel |
+| --- | --- |
+| `Subject<T> extends Observable<T> implements Observer<T>` | `BroadcastChannel<E> : SendChannel<E>` | 
+| - | `public fun openSubscription(): SubscriptionReceiveChannel<E>` |
+
+---
+
+## What is conflated channel?
+
+---
+
+## BroadcastChannel, but loosing elements
+
+---
+
+If you still has to integrate with RxJava2, please use kotlinx-coroutines-rx2 
+
+---
+
+| Name	| Result	| Scope	| Description | 
+| --- | --- | --- | --- |
+| rxCompletable	| Completable	| CoroutineScope	| Cold completable that starts coroutine on subscribe | 
+| rxMaybe	| Maybe	| CoroutineScope | 	Cold maybe that starts coroutine on subscribe | 
+| rxSingle	| Single	| CoroutineScope | Cold single that starts coroutine on subscribe | 
+| rxObservable	| Observable	| ProducerScope	| Cold observable that starts coroutine on subscribe | 
+| rxFlowable	| Flowable	| ProducerScope | 	Cold observable that starts coroutine on subscribe with backpressure support | 
+
+---
+
+| Name	| Description| 
+| --- | --- |
+| Job.asCompletable	| Converts job to hot completable| 
+| Deferred.asSingle	| Converts deferred value to hot single| 
+| ReceiveChannel.asObservable	| Converts streaming channel to hot observable| 
+| Scheduler.asCoroutineDispatcher	| Converts scheduler to CoroutineDispatcher| 
+
+---
+
+## Where to apply converters?
+
+---
+
+* Using libraries which expose Rx-adapters
+* Using coroutines in RxJava-based apps
+
+---
+
+# Short example
+
+---
+
+# Refactoring a really complex rx...
+
+```kotlin
+
+  observable1.getSubject().zipWith(observable2.getSubject(), (t1, t2) -> { 
+		// side effects
+		return true;
+	}).doOnError {
+		// handle errors
+	}
+	.zipWith(observable3.getSubject(), (t3, t4) -> {
+		// side effects
+		return true;
+	}).doOnComplete {
+		// gather data
+	}
+	.subscribe()
+
+```
+
+---
+
+# Basically with coroutines it becomes
+
+```kotlin
+
+ try {
+	val firstChunkJob = async { call1 }
+	val secondChunkJob = async { call2 }
+        val thirdChunkJob = async { call3 }
+	return Result(
+		firstChunkJob.await(), 
+		secondChunkJob.await(), 
+		thirdChunkJob.await())
+ } catch (e: Exception) {
+	// handle errors
+ }
+
+  
+```
+
+---
+
+# Limitations
+
+---
+
+# Channels are basically hot streams.
+
+---
+
+### https://github.com/Kotlin/kotlinx.coroutines/issues/254
+
+---
+
+
+![fit](https://media.giphy.com/media/12PVvY3xouZG2A/giphy.gif)
+
+---
+
+# Links
+
+* https://github.com/vlivanov/github-kotlin-coroutines
+* https://github.com/oleksiyp/mockk
+* http://khttp.readthedocs.io :computer:
+* https://twitter.com/vvsevolodovich :bird:
+* https://medium.com/@dzigorium :pencil:
+
+---
+
+# Links
+
+* https://github.com/vlivanov/github-kotlin-coroutines
+* https://github.com/oleksiyp/mockk
+* http://khttp.readthedocs.io :computer:
+* https://twitter.com/vvsevolodovich :bird:
+* https://medium.com/@dzigorium :pencil:
+
+![fit right](photo.jpg)
+
